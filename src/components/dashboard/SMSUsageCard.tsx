@@ -1,8 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { MessageSquare, AlertTriangle, Plus, Zap } from "lucide-react";
+import { MessageSquare, Plus, Zap } from "lucide-react";
 import { useState } from "react";
 import {
   Dialog,
@@ -40,7 +39,6 @@ export const SMSUsageCard = ({ plan }: SMSUsageCardProps) => {
   const { included, used } = smsData[plan];
   const remaining = Math.max(0, included - used);
   const percentUsed = included > 0 ? (used / included) * 100 : 0;
-  const isLowBalance = remaining < included * 0.2 && included > 0;
 
   const handleBuyPackage = () => {
     if (selectedPackage !== null) {
@@ -55,23 +53,25 @@ export const SMSUsageCard = ({ plan }: SMSUsageCardProps) => {
 
   if (plan === "free") {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <MessageSquare className="w-5 h-5" />
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+              <MessageSquare className="w-4 h-4 text-violet-500" />
+            </div>
             SMS Reminders
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
-            <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center mx-auto mb-3">
               <Zap className="w-6 h-6 text-muted-foreground" />
             </div>
-            <p className="font-medium mb-1">Upgrade to unlock SMS</p>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="font-semibold text-sm mb-1">Upgrade to unlock SMS</p>
+            <p className="text-xs text-muted-foreground mb-4">
               Send SMS reminders for faster payments
             </p>
-            <Button size="sm">
+            <Button size="sm" className="bg-gradient-to-r from-primary to-accent-foreground">
               Upgrade to Pro
             </Button>
           </div>
@@ -82,78 +82,49 @@ export const SMSUsageCard = ({ plan }: SMSUsageCardProps) => {
 
   return (
     <>
-      <Card className={isLowBalance ? "border-warning/50" : ""}>
-        <CardHeader className="pb-2">
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MessageSquare className="w-5 h-5" />
-              SMS Usage
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                <MessageSquare className="w-4 h-4 text-violet-500" />
+              </div>
+              SMS Credits
             </CardTitle>
-            {isLowBalance && (
-              <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
-                <AlertTriangle className="w-3 h-3 mr-1" />
-                Low Balance
-              </Badge>
-            )}
+            <span className="text-xs text-muted-foreground font-medium">
+              {plan === "pro" ? "Pro Plan" : "Agency Plan"}
+            </span>
           </div>
-          <CardDescription>
-            {plan === "pro" ? "Pro Plan" : "Agency Plan"} • {included} SMS/month
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Used this month</span>
-              <span className="font-medium">{used} / {included}</span>
+          {/* Main stat */}
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-3xl font-bold text-foreground">{remaining}</p>
+              <p className="text-xs text-muted-foreground">credits remaining</p>
             </div>
-            <Progress 
-              value={percentUsed} 
-              className={`h-2 ${isLowBalance ? "[&>div]:bg-warning" : ""}`} 
-            />
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 pt-2">
-            <div className="text-center p-2 bg-muted/50 rounded-lg">
-              <p className="text-lg font-bold text-primary">{included}</p>
-              <p className="text-xs text-muted-foreground">Included</p>
-            </div>
-            <div className="text-center p-2 bg-muted/50 rounded-lg">
-              <p className="text-lg font-bold">{used}</p>
-              <p className="text-xs text-muted-foreground">Used</p>
-            </div>
-            <div className="text-center p-2 bg-muted/50 rounded-lg">
-              <p className={`text-lg font-bold ${isLowBalance ? "text-warning" : "text-success"}`}>
-                {remaining}
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">
+                {used} <span className="text-muted-foreground/60">/ {included}</span>
               </p>
-              <p className="text-xs text-muted-foreground">Remaining</p>
+              <p className="text-xs text-muted-foreground">used this month</p>
             </div>
           </div>
 
-          {/* Low Balance Alert */}
-          {isLowBalance && (
-            <div className="p-3 bg-warning/10 border border-warning/20 rounded-lg">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-warning mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium">Running low on SMS credits</p>
-                  <p className="text-xs text-muted-foreground">
-                    Top up to avoid interruption to your SMS reminders
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Progress Bar */}
+          <Progress 
+            value={percentUsed} 
+            className="h-2 bg-muted" 
+          />
 
           {/* Buy More Button */}
           <Button 
             variant="outline" 
-            className="w-full" 
+            className="w-full h-10" 
             onClick={() => setIsDialogOpen(true)}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Buy SMS Add-on Pack
+            Buy More Credits
           </Button>
         </CardContent>
       </Card>
@@ -162,19 +133,19 @@ export const SMSUsageCard = ({ plan }: SMSUsageCardProps) => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Buy SMS Add-on Pack</DialogTitle>
+            <DialogTitle>Buy SMS Credits</DialogTitle>
             <DialogDescription>
               Add more SMS credits to your account. Credits never expire.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-4">
+          <div className="space-y-2 py-4">
             {SMS_PACKAGES.map((pkg, index) => (
               <button
                 key={index}
                 type="button"
                 onClick={() => setSelectedPackage(index)}
-                className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
+                className={`w-full p-4 text-left rounded-xl border-2 transition-all ${
                   selectedPackage === index
                     ? "border-primary bg-primary/5"
                     : "border-border hover:border-primary/50"
@@ -182,12 +153,12 @@ export const SMSUsageCard = ({ plan }: SMSUsageCardProps) => {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">{pkg.amount} SMS</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="font-semibold">{pkg.amount} SMS</p>
+                    <p className="text-xs text-muted-foreground">
                       ${(pkg.price / pkg.amount * 10).toFixed(1)}¢ per SMS
                     </p>
                   </div>
-                  <p className="text-lg font-bold">${pkg.price}</p>
+                  <p className="text-xl font-bold">${pkg.price}</p>
                 </div>
               </button>
             ))}

@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Home", url: "/dashboard", icon: LayoutDashboard },
   { title: "Invoices", url: "/dashboard?tab=invoices", icon: FileText },
   { title: "Clients", url: "/clients", icon: Users },
   { title: "Analytics", url: "/dashboard?tab=analytics", icon: BarChart3 },
@@ -29,26 +29,26 @@ export function MobileBottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border md:hidden safe-area-bottom">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border md:hidden safe-area-bottom">
+      <div className="flex items-center justify-around h-[68px] px-1">
         {navItems.map((item) => {
           const active = isActive(item.url);
           return (
             <NavLink
               key={item.title}
               to={item.url}
-              className={`flex flex-col items-center justify-center flex-1 h-full min-w-[44px] transition-colors ${
+              className={`flex flex-col items-center justify-center flex-1 h-full min-w-[48px] py-2 rounded-xl mx-0.5 transition-all ${
                 active
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground active:bg-muted/50"
               }`}
             >
-              <item.icon
-                className={`w-5 h-5 mb-1 transition-transform ${
-                  active ? "scale-110" : ""
-                }`}
-              />
-              <span className="text-[10px] font-medium">{item.title}</span>
+              <div className={`p-1.5 rounded-lg transition-colors ${active ? 'bg-primary/10' : ''}`}>
+                <item.icon className={`w-5 h-5 ${active ? "text-primary" : ""}`} />
+              </div>
+              <span className={`text-[10px] mt-0.5 ${active ? 'font-semibold' : 'font-medium'}`}>
+                {item.title}
+              </span>
             </NavLink>
           );
         })}
