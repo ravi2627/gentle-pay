@@ -9,6 +9,7 @@ export interface PaymentLink {
   url: string;
   short_code: string | null;
   is_active: boolean;
+  is_default: boolean;
   expires_at: string | null;
   created_at: string;
 }
@@ -17,13 +18,15 @@ export interface PaymentLinkWithInvoice extends PaymentLink {
   invoice_number: string;
   client_name: string | null;
   amount: number;
+  invoice_count: number;
 }
 
 export interface CreatePaymentLinkData {
-  invoice_id: string;
   url: string;
+  invoice_id?: string;
   short_code?: string;
   expires_at?: string;
+  is_default?: boolean;
 }
 
 export const usePaymentLinks = () => {
@@ -52,7 +55,7 @@ export const usePaymentLinks = () => {
       // Fetch invoices for details
       const { data: invoicesData } = await supabase
         .from("invoices")
-        .select("id, invoice_number, amount, client_id");
+        .select("id, invoice_number, amount, client_id, payment_link_id");
 
       // Fetch clients for names
       const { data: clientsData } = await supabase
@@ -64,11 +67,17 @@ export const usePaymentLinks = () => {
         const invoice = invoicesData?.find((inv) => inv.id === link.invoice_id);
         const client = clientsData?.find((c) => c.id === invoice?.client_id);
         
+        // Count invoices using this payment link
+        const invoiceCount = invoicesData?.filter(
+          (inv) => inv.payment_link_id === link.id
+        ).length || 0;
+        
         return {
           ...link,
-          invoice_number: invoice?.invoice_number || "Unknown",
+          invoice_number: invoice?.invoice_number || "N/A",
           client_name: client?.name || null,
           amount: invoice?.amount || 0,
+          invoice_count: invoiceCount,
         };
       });
 
@@ -76,20 +85,27 @@ export const usePaymentLinks = () => {
     },
   });
 
+  // Get default payment link
+  const defaultPaymentLink = paymentLinks.find((link) => link.is_default);
+
   // Create payment link
   const createPaymentLink = useMutation({
     mutationFn: async (linkData: CreatePaymentLinkData) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // If this is the first link, make it default
+      const isFirstLink = paymentLinks.length === 0;
+
       const { data, error } = await supabase
         .from("payment_links")
         .insert({
           user_id: user.id,
-          invoice_id: linkData.invoice_id,
+          invoice_id: linkData.invoice_id || null,
           url: linkData.url,
           short_code: linkData.short_code || null,
           expires_at: linkData.expires_at || null,
+          is_default: linkData.is_default ?? isFirstLink,
         })
         .select()
         .single();
@@ -165,13 +181,44 @@ export const usePaymentLinks = () => {
     },
   });
 
+  // Set as default
+  const setDefault = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase
+        .from("payment_links")
+        .update({ is_default: true })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as PaymentLink;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payment-links"] });
+      toast({
+        title: "Default link updated",
+        description: "This link will now auto-fill in new invoices.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to set default link",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     paymentLinks,
+    defaultPaymentLink,
     isLoading,
     error,
     refetch,
     createPaymentLink,
     deletePaymentLink,
     toggleActive,
+    setDefault,
   };
 };

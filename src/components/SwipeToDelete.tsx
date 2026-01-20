@@ -2,13 +2,14 @@ import { ReactNode, useState } from "react";
 import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { Trash2 } from "lucide-react";
 
-interface SwipeToDeleteProps {
+export interface SwipeToDeleteProps {
   children: ReactNode;
   onDelete: () => void;
   className?: string;
+  disabled?: boolean;
 }
 
-export function SwipeToDelete({ children, onDelete, className = "" }: SwipeToDeleteProps) {
+export function SwipeToDelete({ children, onDelete, className = "", disabled = false }: SwipeToDeleteProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const x = useMotionValue(0);
   const deleteThreshold = -80;
@@ -16,6 +17,11 @@ export function SwipeToDelete({ children, onDelete, className = "" }: SwipeToDel
   // Transform for the delete background opacity
   const deleteOpacity = useTransform(x, [0, deleteThreshold], [0, 1]);
   const deleteScale = useTransform(x, [0, deleteThreshold], [0.5, 1]);
+  
+  // If disabled, just render children without swipe functionality
+  if (disabled) {
+    return <div className={className}>{children}</div>;
+  }
   
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x < deleteThreshold) {
