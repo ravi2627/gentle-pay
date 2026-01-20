@@ -218,10 +218,11 @@ const Dashboard = () => {
     const clientName = formData.client.trim();
     const amount = parseFloat(formData.amount);
 
-    if (!clientName || clientName.length > 100) {
+    // Validate client selection: either a client is selected or a new client name is entered
+    if (!formData.clientId && (!clientName || clientName.length > 100)) {
       toast({
-        title: "Invalid client name",
-        description: "Please enter a valid client name (max 100 characters).",
+        title: "Invalid client",
+        description: "Please select a client or enter a valid client name (max 100 characters).",
         variant: "destructive",
       });
       return;
@@ -726,17 +727,61 @@ const Dashboard = () => {
 
           <form onSubmit={handleCreateInvoice} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="client">Client Name</Label>
-              <Input
-                id="client"
-                placeholder="e.g., Acme Corp"
-                value={formData.client}
-                onChange={(e) =>
-                  setFormData({ ...formData, client: e.target.value })
-                }
-                maxLength={100}
-                required
-              />
+              <Label htmlFor="client">Client</Label>
+              {clientsLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : clients && clients.length > 0 ? (
+                <Select
+                  value={formData.clientId}
+                  onValueChange={(value) => {
+                    if (value === "new") {
+                      setFormData({ ...formData, clientId: "", client: "" });
+                    } else {
+                      const selectedClient = clients.find(c => c.id === value);
+                      setFormData({ 
+                        ...formData, 
+                        clientId: value, 
+                        client: selectedClient?.name || "" 
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}{client.company ? ` (${client.company})` : ""}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="new">+ Add new client</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="client"
+                  placeholder="e.g., Acme Corp"
+                  value={formData.client}
+                  onChange={(e) =>
+                    setFormData({ ...formData, client: e.target.value })
+                  }
+                  maxLength={100}
+                  required
+                />
+              )}
+              {formData.clientId === "" && clients && clients.length > 0 && (
+                <Input
+                  id="newClient"
+                  placeholder="Enter new client name"
+                  value={formData.client}
+                  onChange={(e) =>
+                    setFormData({ ...formData, client: e.target.value })
+                  }
+                  maxLength={100}
+                  className="mt-2"
+                />
+              )}
             </div>
 
             <div className="space-y-2">
