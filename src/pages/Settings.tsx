@@ -1,5 +1,4 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,8 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import {
-  ArrowLeft,
   Bell,
   Calendar,
   Clock,
@@ -27,8 +26,7 @@ import {
 } from "lucide-react";
 
 const Settings = () => {
-  const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const [isSaving, setIsSaving] = useState(false);
@@ -58,12 +56,6 @@ const Settings = () => {
     includePaymentLink: true,
     enableSMS: false,
   });
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-    }
-  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     if (user) {
@@ -129,36 +121,9 @@ const Settings = () => {
     }, 500);
   };
 
-  if (!isAuthenticated) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16 gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/dashboard">
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-lg font-semibold">Settings</h1>
-              <p className="text-xs text-muted-foreground">
-                Manage your account and preferences
-              </p>
-            </div>
-            <Badge variant="secondary" className="ml-auto text-xs">
-              Demo Mode
-            </Badge>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <DashboardLayout title="Settings" description="Manage your account and preferences">
+      <div className="max-w-4xl space-y-6">
         {/* Profile Section */}
         <Card>
           <CardHeader>
@@ -500,8 +465,8 @@ const Settings = () => {
             Connect a backend to save your preferences.
           </p>
         </div>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 
