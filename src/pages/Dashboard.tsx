@@ -618,12 +618,21 @@ const Dashboard = () => {
                           {invoice.dueDate}
                         </td>
                         <td className="py-4 px-4">
-                          <EmailStatusIndicator emailStatus={getInvoiceEmailStatus(invoice.id)} />
+                          <div className="flex items-center gap-2">
+                            <EmailStatusIndicator emailStatus={getInvoiceEmailStatus(invoice.id)} />
+                          </div>
                         </td>
                         <td className="py-4 px-4">
-                          <span className="text-muted-foreground">
-                            {invoice.reminders} sent
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {getInvoiceEmailStatus(invoice.id).totalEmailsSent} emails
+                            </Badge>
+                            {getInvoiceEmailStatus(invoice.id).totalOpens > 0 && (
+                              <Badge variant="secondary" className="text-xs bg-success/10 text-success">
+                                {getInvoiceEmailStatus(invoice.id).totalOpens} opens
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="py-4 px-4">{getStatusBadge(invoice.status)}</td>
                         <td className="py-4 px-4 text-right">
@@ -674,12 +683,65 @@ const Dashboard = () => {
         <TabsContent value="analytics" className="space-y-6">
           {/* Email Tracking Stats */}
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Email Tracking</h3>
+            <h3 className="text-lg font-semibold">📧 Email Tracking</h3>
             <p className="text-sm text-muted-foreground">
-              Monitor your email reminder performance
+              Monitor your email reminder performance - kis ko email bheji, kitni baar, aur open hui ya nahi
             </p>
           </div>
           <EmailTrackingCards stats={emailStats} />
+          
+          {/* Email Sent Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                Recent Email Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {invoices
+                  .filter(inv => getInvoiceEmailStatus(inv.id).totalEmailsSent > 0)
+                  .slice(0, 5)
+                  .map((invoice) => {
+                    const emailStatus = getInvoiceEmailStatus(invoice.id);
+                    return (
+                      <div
+                        key={invoice.id}
+                        className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                      >
+                        <div className="flex items-center gap-3">
+                          <EmailStatusIndicator emailStatus={emailStatus} size="sm" />
+                          <div>
+                            <p className="font-medium text-sm">{invoice.client}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {invoice.id} • {emailStatus.totalEmailsSent} email{emailStatus.totalEmailsSent !== 1 ? 's' : ''} sent
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {emailStatus.totalOpens > 0 ? (
+                            <Badge className="bg-success/10 text-success border-success/20 text-xs">
+                              <Eye className="w-3 h-3 mr-1" />
+                              {emailStatus.totalOpens} opens
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              Not opened yet
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                {invoices.filter(inv => getInvoiceEmailStatus(inv.id).totalEmailsSent > 0).length === 0 && (
+                  <p className="text-center text-muted-foreground py-4">
+                    No emails sent yet. Send reminders to start tracking!
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
           
           <DashboardCharts currencySymbol={currencySymbol} />
         </TabsContent>
