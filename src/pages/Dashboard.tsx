@@ -1,9 +1,27 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import {
   Bell,
   CreditCard,
@@ -20,7 +38,16 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const invoices = [
+interface Invoice {
+  id: string;
+  client: string;
+  amount: number;
+  status: "paid" | "pending" | "overdue";
+  dueDate: string;
+  reminders: number;
+}
+
+const initialInvoices: Invoice[] = [
   {
     id: "INV-001",
     client: "Acme Corp",
@@ -58,6 +85,17 @@ const invoices = [
 const Dashboard = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    client: "",
+    amount: "",
+    dueDate: "",
+    status: "pending" as "paid" | "pending" | "overdue",
+  });
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -68,6 +106,78 @@ const Dashboard = () => {
   const handleLogout = () => {
     logout();
     navigate("/");
+  };
+
+  const resetForm = () => {
+    setFormData({
+      client: "",
+      amount: "",
+      dueDate: "",
+      status: "pending",
+    });
+  };
+
+  const handleCreateInvoice = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validation
+    const clientName = formData.client.trim();
+    const amount = parseFloat(formData.amount);
+
+    if (!clientName || clientName.length > 100) {
+      toast({
+        title: "Invalid client name",
+        description: "Please enter a valid client name (max 100 characters).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isNaN(amount) || amount <= 0 || amount > 10000000) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount between $0.01 and $10,000,000.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.dueDate) {
+      toast({
+        title: "Missing due date",
+        description: "Please select a due date for the invoice.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      const newInvoice: Invoice = {
+        id: `INV-${String(invoices.length + 1).padStart(3, "0")}`,
+        client: clientName,
+        amount: amount,
+        status: formData.status,
+        dueDate: new Date(formData.dueDate).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        reminders: 0,
+      };
+
+      setInvoices([newInvoice, ...invoices]);
+      setIsSubmitting(false);
+      setIsDialogOpen(false);
+      resetForm();
+
+      toast({
+        title: "Invoice created!",
+        description: `Invoice ${newInvoice.id} for ${newInvoice.client} has been created.`,
+      });
+    }, 500);
   };
 
   if (!isAuthenticated) {
@@ -101,6 +211,12 @@ const Dashboard = () => {
         return null;
     }
   };
+
+  const totalOutstanding = invoices
+    .filter((inv) => inv.status !== "paid")
+    .reduce((sum, inv) => sum + inv.amount, 0);
+
+  const pendingCount = invoices.filter((inv) => inv.status !== "paid").length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -158,9 +274,11 @@ const Dashboard = () => {
               <DollarSign className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$9,100</div>
+              <div className="text-2xl font-bold">
+                ${totalOutstanding.toLocaleString()}
+              </div>
               <p className="text-xs text-muted-foreground">
-                Across 3 invoices
+                Across {pendingCount} invoices
               </p>
             </CardContent>
           </Card>
@@ -209,7 +327,7 @@ const Dashboard = () => {
 
         {/* Actions */}
         <div className="flex flex-wrap gap-3 mb-8">
-          <Button>
+          <Button onClick={() => setIsDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             New Invoice
           </Button>
@@ -297,6 +415,99 @@ const Dashboard = () => {
           </p>
         </div>
       </main>
+
+      {/* New Invoice Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Invoice</DialogTitle>
+            <DialogDescription>
+              Add a new invoice to track and send payment reminders.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateInvoice} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="client">Client Name</Label>
+              <Input
+                id="client"
+                placeholder="e.g., Acme Corp"
+                value={formData.client}
+                onChange={(e) =>
+                  setFormData({ ...formData, client: e.target.value })
+                }
+                maxLength={100}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount ($)</Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="0.00"
+                min="0.01"
+                max="10000000"
+                step="0.01"
+                value={formData.amount}
+                onChange={(e) =>
+                  setFormData({ ...formData, amount: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dueDate">Due Date</Label>
+              <Input
+                id="dueDate"
+                type="date"
+                value={formData.dueDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, dueDate: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value: "paid" | "pending" | "overdue") =>
+                  setFormData({ ...formData, status: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsDialogOpen(false);
+                  resetForm();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create Invoice"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
