@@ -29,6 +29,10 @@ import { SMSUsageCard } from "@/components/dashboard/SMSUsageCard";
 import { TeamManagement } from "@/components/dashboard/TeamManagement";
 import { MobileInvoiceList } from "@/components/dashboard/MobileInvoiceList";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
+import { EmailTrackingCards } from "@/components/dashboard/EmailTrackingCards";
+import { EmailStatusIndicator } from "@/components/dashboard/EmailStatusIndicator";
+import { InvoiceActivityTimeline, reminderLogsToActivities } from "@/components/dashboard/InvoiceActivityTimeline";
+import { useEmailTracking } from "@/hooks/useEmailTracking";
 import {
   CreditCard,
   Mail,
@@ -43,6 +47,7 @@ import {
   Trash2,
   MoreHorizontal,
   Edit,
+  Eye,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -61,6 +66,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Invoice {
   id: string;
@@ -153,6 +165,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Email tracking hook
+  const { stats: emailStats, getInvoiceEmailStatus, getInvoiceLogs, sendReminder, shouldEscalateToSMS } = useEmailTracking();
+
   // User preferences (simulated)
   const [currency, setCurrency] = useState("USD");
   const [plan] = useState<"free" | "pro" | "agency">("pro");
@@ -166,6 +181,8 @@ const Dashboard = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [isPaymentLinksDialogOpen, setIsPaymentLinksDialogOpen] = useState(false);
+  const [isActivitySheetOpen, setIsActivitySheetOpen] = useState(false);
+  const [selectedActivityInvoice, setSelectedActivityInvoice] = useState<Invoice | null>(null);
   const [isAddingLink, setIsAddingLink] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
@@ -399,15 +416,30 @@ const Dashboard = () => {
   };
 
   const handleSendSingleReminder = (invoiceId: string) => {
+    const invoice = invoices.find((inv) => inv.id === invoiceId);
+    if (!invoice) return;
+
+    // Use email tracking hook to send reminder
+    const result = sendReminder(invoiceId, `client-${invoiceId}`, "email", "polite");
+    
     setInvoices(
       invoices.map((inv) =>
         inv.id === invoiceId ? { ...inv, reminders: inv.reminders + 1 } : inv
       )
     );
+    
     toast({
-      title: "Reminder sent!",
-      description: `Payment reminder sent for invoice ${invoiceId}.`,
+      title: result.deliveryStatus === "sent" ? "Reminder sent!" : "Reminder failed",
+      description: result.deliveryStatus === "sent" 
+        ? `Email reminder sent to ${invoice.client}. We'll track when they open it.`
+        : `Failed to send reminder to ${invoice.client}. Please try again.`,
+      variant: result.deliveryStatus === "sent" ? "default" : "destructive",
     });
+  };
+
+  const openActivitySheet = (invoice: Invoice) => {
+    setSelectedActivityInvoice(invoice);
+    setIsActivitySheetOpen(true);
   };
 
   return (
@@ -522,6 +554,7 @@ const Dashboard = () => {
             <MobileInvoiceList
               invoices={invoices}
               currencySymbol={currencySymbol}
+              getEmailStatus={getInvoiceEmailStatus}
               onEdit={openEditDialog}
               onDelete={openDeleteDialog}
               onMarkPaid={handleMarkPaid}
@@ -557,6 +590,9 @@ const Dashboard = () => {
                         Due Date
                       </th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        Email Status
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
                         Reminders
                       </th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
@@ -582,6 +618,9 @@ const Dashboard = () => {
                           {invoice.dueDate}
                         </td>
                         <td className="py-4 px-4">
+                          <EmailStatusIndicator emailStatus={getInvoiceEmailStatus(invoice.id)} />
+                        </td>
+                        <td className="py-4 px-4">
                           <span className="text-muted-foreground">
                             {invoice.reminders} sent
                           </span>
@@ -595,6 +634,19 @@ const Dashboard = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openActivitySheet(invoice)}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Activity
+                              </DropdownMenuItem>
+                              {invoice.status !== "paid" && (
+                                <DropdownMenuItem onClick={() => handleSendSingleReminder(invoice.id)}>
+                                  <Send className="w-4 h-4 mr-2" />
+                                  Send Reminder
+                                  {shouldEscalateToSMS(invoice.id) && (
+                                    <Badge variant="outline" className="ml-2 text-xs">SMS?</Badge>
+                                  )}
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem onClick={() => openEditDialog(invoice)}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit Invoice
@@ -620,6 +672,15 @@ const Dashboard = () => {
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
+          {/* Email Tracking Stats */}
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">Email Tracking</h3>
+            <p className="text-sm text-muted-foreground">
+              Monitor your email reminder performance
+            </p>
+          </div>
+          <EmailTrackingCards stats={emailStats} />
+          
           <DashboardCharts currencySymbol={currencySymbol} />
         </TabsContent>
 
@@ -1216,6 +1277,81 @@ const Dashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Invoice Activity Sheet */}
+      <Sheet open={isActivitySheetOpen} onOpenChange={setIsActivitySheetOpen}>
+        <SheetContent className="sm:max-w-md overflow-y-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle>Invoice Activity</SheetTitle>
+            <SheetDescription>
+              {selectedActivityInvoice?.id} - {selectedActivityInvoice?.client}
+            </SheetDescription>
+          </SheetHeader>
+          
+          {selectedActivityInvoice && (
+            <div className="space-y-6">
+              {/* Invoice Summary */}
+              <div className="p-4 rounded-lg bg-muted/30 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Amount</span>
+                  <span className="font-semibold">
+                    {currencySymbol}{selectedActivityInvoice.amount.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Due Date</span>
+                  <span>{selectedActivityInvoice.dueDate}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Status</span>
+                  {getStatusBadge(selectedActivityInvoice.status)}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Email Status</span>
+                  <EmailStatusIndicator 
+                    emailStatus={getInvoiceEmailStatus(selectedActivityInvoice.id)} 
+                    size="sm" 
+                  />
+                </div>
+              </div>
+
+              {/* Activity Timeline */}
+              <div>
+                <h4 className="text-sm font-medium mb-3">Activity Timeline</h4>
+                <InvoiceActivityTimeline 
+                  activities={reminderLogsToActivities(getInvoiceLogs(selectedActivityInvoice.id))}
+                />
+              </div>
+
+              {/* Actions */}
+              {selectedActivityInvoice.status !== "paid" && (
+                <div className="pt-4 border-t space-y-2">
+                  <Button 
+                    className="w-full"
+                    onClick={() => {
+                      handleSendSingleReminder(selectedActivityInvoice.id);
+                    }}
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Send Reminder
+                    {shouldEscalateToSMS(selectedActivityInvoice.id) && (
+                      <Badge variant="secondary" className="ml-2">Try SMS</Badge>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => handleMarkPaid(selectedActivityInvoice.id)}
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Mark as Paid
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </DashboardLayout>
   );
 };
