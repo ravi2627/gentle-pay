@@ -1012,7 +1012,7 @@ const Dashboard = () => {
 
       {/* Payment Links Dialog */}
       <Dialog open={isPaymentLinksDialogOpen} onOpenChange={setIsPaymentLinksDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Payment Links</DialogTitle>
             <DialogDescription>
@@ -1022,11 +1022,12 @@ const Dashboard = () => {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Your Payment Links</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label className="shrink-0">Your Payment Links</Label>
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="shrink-0"
                   onClick={() => setIsAddingLink(!isAddingLink)}
                 >
                   <Plus className="w-4 h-4 mr-1" />
