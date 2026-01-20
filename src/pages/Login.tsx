@@ -1,31 +1,35 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulated login - replace with actual auth when backend is connected
+    // Demo login - simulates authentication
     setTimeout(() => {
+      login(email);
       setIsLoading(false);
       toast({
-        title: "Backend not connected",
-        description: "Authentication will work once the backend is set up.",
-        variant: "destructive",
+        title: "Welcome back!",
+        description: "You've been logged in successfully.",
       });
-    }, 1000);
+      navigate("/dashboard");
+    }, 800);
   };
 
   return (
