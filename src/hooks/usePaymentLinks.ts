@@ -5,35 +5,38 @@ import { useToast } from "@/hooks/use-toast";
 export interface PaymentLink {
   id: string;
   user_id: string;
-  invoice_id: string;
+  label: string;
   url: string;
-  short_code: string | null;
   is_active: boolean;
   is_default: boolean;
-  expires_at: string | null;
   created_at: string;
 }
 
-export interface PaymentLinkWithInvoice extends PaymentLink {
-  invoice_number: string;
-  client_name: string | null;
-  amount: number;
+export interface PaymentLinkWithStats extends PaymentLink {
   invoice_count: number;
 }
 
 export interface CreatePaymentLinkData {
+  label: string;
   url: string;
-  invoice_id?: string;
-  short_code?: string;
-  expires_at?: string;
   is_default?: boolean;
 }
+
+// URL validation for common payment providers
+const isValidPaymentUrl = (url: string): boolean => {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+};
 
 export const usePaymentLinks = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Fetch all payment links with invoice info
+  // Fetch all payment links with invoice count
   const {
     data: paymentLinks = [],
     isLoading,
@@ -52,36 +55,24 @@ export const usePaymentLinks = () => {
 
       if (linksError) throw linksError;
 
-      // Fetch invoices for details
+      // Fetch invoices to count usage per payment link
       const { data: invoicesData } = await supabase
         .from("invoices")
-        .select("id, invoice_number, amount, client_id, payment_link_id");
+        .select("id, payment_link_id");
 
-      // Fetch clients for names
-      const { data: clientsData } = await supabase
-        .from("clients")
-        .select("id, name");
-
-      // Enrich payment links
+      // Enrich payment links with invoice count
       const enrichedLinks = (linksData as PaymentLink[]).map((link) => {
-        const invoice = invoicesData?.find((inv) => inv.id === link.invoice_id);
-        const client = clientsData?.find((c) => c.id === invoice?.client_id);
-        
-        // Count invoices using this payment link
         const invoiceCount = invoicesData?.filter(
           (inv) => inv.payment_link_id === link.id
         ).length || 0;
-        
+
         return {
           ...link,
-          invoice_number: invoice?.invoice_number || "N/A",
-          client_name: client?.name || null,
-          amount: invoice?.amount || 0,
           invoice_count: invoiceCount,
         };
       });
 
-      return enrichedLinks as PaymentLinkWithInvoice[];
+      return enrichedLinks as PaymentLinkWithStats[];
     },
   });
 
@@ -94,6 +85,18 @@ export const usePaymentLinks = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Validate URL
+      if (!linkData.url.trim()) {
+        throw new Error("Payment URL is required");
+      }
+
+      if (!isValidPaymentUrl(linkData.url.trim())) {
+        throw new Error("Please enter a valid payment URL (must start with http:// or https://)");
+      }
+
+      // Validate label
+      const label = linkData.label.trim() || "Payment Link";
+
       // If this is the first link, make it default
       const isFirstLink = paymentLinks.length === 0;
 
@@ -101,10 +104,8 @@ export const usePaymentLinks = () => {
         .from("payment_links")
         .insert({
           user_id: user.id,
-          invoice_id: linkData.invoice_id || null,
-          url: linkData.url,
-          short_code: linkData.short_code || null,
-          expires_at: linkData.expires_at || null,
+          label,
+          url: linkData.url.trim(),
           is_default: linkData.is_default ?? isFirstLink,
         })
         .select()

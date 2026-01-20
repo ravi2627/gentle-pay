@@ -40,6 +40,7 @@ export interface CreateInvoiceFormData {
 
 interface PaymentLinkOption {
   id: string;
+  label: string;
   url: string;
   isDefault: boolean;
 }
@@ -228,7 +229,7 @@ export function CreateInvoiceForm({
             ) : (
               paymentLinks.map((link) => (
                 <SelectItem key={link.id} value={link.id}>
-                  {link.url.substring(0, 40)}...
+                  {link.label}
                   {link.isDefault && " ⭐ Default"}
                 </SelectItem>
               ))

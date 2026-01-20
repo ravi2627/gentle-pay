@@ -46,6 +46,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface PaymentLinkWithStats {
   id: string;
+  label: string;
   url: string;
   isDefault: boolean;
   isActive: boolean;
@@ -56,7 +57,7 @@ export interface PaymentLinkWithStats {
 interface PaymentLinksManagerProps {
   paymentLinks: PaymentLinkWithStats[];
   isLoading: boolean;
-  onCreateLink: (url: string) => Promise<void>;
+  onCreateLink: (label: string, url: string) => Promise<void>;
   onDeleteLink: (id: string) => Promise<void>;
   onSetDefault: (id: string) => Promise<void>;
   onToggleActive: (id: string, isActive: boolean) => Promise<void>;
@@ -71,19 +72,42 @@ export function PaymentLinksManager({
   onToggleActive,
 }: PaymentLinksManagerProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
   const [newUrl, setNewUrl] = useState("");
+  const [urlError, setUrlError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
+  const validateUrl = (url: string): boolean => {
+    if (!url.trim()) {
+      setUrlError("Payment URL is required");
+      return false;
+    }
+    try {
+      const parsed = new URL(url.trim());
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+        setUrlError("URL must start with http:// or https://");
+        return false;
+      }
+      setUrlError("");
+      return true;
+    } catch {
+      setUrlError("Please enter a valid URL");
+      return false;
+    }
+  };
+
   const handleCreateLink = async () => {
-    if (!newUrl.trim()) return;
+    if (!validateUrl(newUrl)) return;
 
     try {
       setIsSubmitting(true);
-      await onCreateLink(newUrl.trim());
+      await onCreateLink(newLabel.trim() || "Payment Link", newUrl.trim());
+      setNewLabel("");
       setNewUrl("");
+      setUrlError("");
       setIsAddDialogOpen(false);
     } catch (error) {
       // Error handled by parent
@@ -115,6 +139,15 @@ export function PaymentLinksManager({
     await onDeleteLink(id);
   };
 
+  const handleDialogClose = (open: boolean) => {
+    setIsAddDialogOpen(open);
+    if (!open) {
+      setNewLabel("");
+      setNewUrl("");
+      setUrlError("");
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Header with Add Button */}
@@ -125,7 +158,7 @@ export function PaymentLinksManager({
             Manage your payment links. Set one as default to auto-fill in invoices.
           </p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="h-4 w-4 mr-1" />
@@ -136,24 +169,41 @@ export function PaymentLinksManager({
             <DialogHeader>
               <DialogTitle>Add Payment Link</DialogTitle>
               <DialogDescription>
-                Add your Stripe, PayPal, or other payment link URL.
+                Add your Stripe, PayPal, UPI, or other payment link URL.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="payment-url">Payment URL</Label>
+                <Label htmlFor="payment-label">Label</Label>
+                <Input
+                  id="payment-label"
+                  type="text"
+                  placeholder="e.g., Stripe, PayPal, UPI"
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="payment-url">Payment URL *</Label>
                 <Input
                   id="payment-url"
                   type="url"
                   placeholder="https://pay.stripe.com/..."
                   value={newUrl}
-                  onChange={(e) => setNewUrl(e.target.value)}
+                  onChange={(e) => {
+                    setNewUrl(e.target.value);
+                    if (urlError) validateUrl(e.target.value);
+                  }}
+                  className={urlError ? "border-destructive" : ""}
                 />
+                {urlError && (
+                  <p className="text-sm text-destructive">{urlError}</p>
+                )}
               </div>
               <div className="flex flex-col-reverse sm:flex-row gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => setIsAddDialogOpen(false)}
+                  onClick={() => handleDialogClose(false)}
                   className="w-full sm:w-auto"
                   disabled={isSubmitting}
                 >
@@ -253,8 +303,8 @@ export function PaymentLinksManager({
                     {/* Link Details */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium truncate max-w-[200px] sm:max-w-none">
-                          {link.url}
+                        <span className="text-sm font-medium">
+                          {link.label}
                         </span>
                         {link.isDefault && (
                           <Badge variant="secondary" className="shrink-0">
@@ -267,6 +317,9 @@ export function PaymentLinksManager({
                           </Badge>
                         )}
                       </div>
+                      <p className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-none mt-1">
+                        {link.url}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         Used in {link.invoiceCount} invoice
                         {link.invoiceCount !== 1 ? "s" : ""}
