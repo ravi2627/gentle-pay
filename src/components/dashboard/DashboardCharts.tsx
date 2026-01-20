@@ -17,8 +17,6 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface DashboardChartsProps {
   currencySymbol: string;
@@ -45,101 +43,104 @@ const paymentsReceivedData = [
 
 const invoiceStatusData = [
   { name: "Paid", value: 45, color: "hsl(142, 76%, 36%)" },
-  { name: "Pending", value: 35, color: "hsl(38, 92%, 50%)" },
+  { name: "Pending", value: 35, color: "hsl(243, 75%, 58%)" },
   { name: "Overdue", value: 20, color: "hsl(0, 84%, 60%)" },
 ];
 
 const reminderEffectivenessData = [
-  { name: "W1", emails: 24, sms: 5, paidAfter: 12 },
-  { name: "W2", emails: 18, sms: 8, paidAfter: 15 },
-  { name: "W3", emails: 32, sms: 12, paidAfter: 22 },
-  { name: "W4", emails: 28, sms: 10, paidAfter: 18 },
+  { name: "Week 1", emails: 24, paid: 12 },
+  { name: "Week 2", emails: 18, paid: 15 },
+  { name: "Week 3", emails: 32, paid: 22 },
+  { name: "Week 4", emails: 28, paid: 18 },
 ];
 
 export const DashboardCharts = ({ currencySymbol }: DashboardChartsProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const scrollTo = (direction: "left" | "right") => {
-    if (scrollRef.current) {
-      const scrollAmount = scrollRef.current.offsetWidth * 0.8;
-      scrollRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
-
   const charts = [
     {
-      title: "Outstanding Over Time",
+      title: "Outstanding Payments",
+      subtitle: "Last 30 days",
       content: (
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={outstandingData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <AreaChart data={outstandingData}>
+            <defs>
+              <linearGradient id="colorOutstanding" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(243, 75%, 58%)" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="hsl(243, 75%, 58%)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis 
               dataKey="date" 
-              tick={{ fontSize: 11 }} 
-              stroke="hsl(var(--muted-foreground))"
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+              axisLine={false}
+              tickLine={false}
             />
             <YAxis 
-              tick={{ fontSize: 11 }} 
-              stroke="hsl(var(--muted-foreground))"
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
               tickFormatter={(value) => `${currencySymbol}${(value / 1000).toFixed(0)}k`}
-              width={50}
+              width={55}
+              axisLine={false}
+              tickLine={false}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
+                backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
-                borderRadius: "8px",
+                borderRadius: "12px",
                 fontSize: "12px",
+                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
               }}
               formatter={(value: number) => [`${currencySymbol}${value.toLocaleString()}`, "Outstanding"]}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="amount"
-              stroke="hsl(var(--primary))"
+              stroke="hsl(243, 75%, 58%)"
               strokeWidth={2}
-              dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 3 }}
-              activeDot={{ r: 5 }}
+              fill="url(#colorOutstanding)"
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       ),
     },
     {
-      title: "Payments Received",
+      title: "Revenue Collected",
+      subtitle: "Monthly trend",
       content: (
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={paymentsReceivedData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis 
-              dataKey="month" 
-              tick={{ fontSize: 11 }} 
-              stroke="hsl(var(--muted-foreground))"
-            />
-            <YAxis 
-              tick={{ fontSize: 11 }} 
-              stroke="hsl(var(--muted-foreground))"
-              tickFormatter={(value) => `${currencySymbol}${(value / 1000).toFixed(0)}k`}
-              width={50}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "8px",
-                fontSize: "12px",
-              }}
-              formatter={(value: number) => [`${currencySymbol}${value.toLocaleString()}`, "Received"]}
-            />
             <defs>
               <linearGradient id="colorPayments" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.3} />
+                <stop offset="5%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.2} />
                 <stop offset="95%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0} />
               </linearGradient>
             </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+            <XAxis 
+              dataKey="month" 
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis 
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+              tickFormatter={(value) => `${currencySymbol}${(value / 1000).toFixed(0)}k`}
+              width={55}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "12px",
+                fontSize: "12px",
+                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+              }}
+              formatter={(value: number) => [`${currencySymbol}${value.toLocaleString()}`, "Collected"]}
+            />
             <Area
               type="monotone"
               dataKey="amount"
@@ -153,6 +154,7 @@ export const DashboardCharts = ({ currencySymbol }: DashboardChartsProps) => {
     },
     {
       title: "Invoice Status",
+      subtitle: "Current breakdown",
       content: (
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -160,10 +162,11 @@ export const DashboardCharts = ({ currencySymbol }: DashboardChartsProps) => {
               data={invoiceStatusData}
               cx="50%"
               cy="50%"
-              innerRadius={50}
-              outerRadius={80}
-              paddingAngle={2}
+              innerRadius={55}
+              outerRadius={85}
+              paddingAngle={3}
               dataKey="value"
+              strokeWidth={0}
             >
               {invoiceStatusData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
@@ -171,62 +174,69 @@ export const DashboardCharts = ({ currencySymbol }: DashboardChartsProps) => {
             </Pie>
             <Tooltip
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
+                backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
-                borderRadius: "8px",
+                borderRadius: "12px",
                 fontSize: "12px",
+                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
               }}
               formatter={(value: number) => [`${value}%`, ""]}
             />
             <Legend 
               verticalAlign="bottom" 
               height={36}
-              formatter={(value) => <span className="text-xs">{value}</span>}
+              formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
             />
           </PieChart>
         </ResponsiveContainer>
       ),
     },
     {
-      title: "Reminder Impact",
+      title: "Reminder Performance",
+      subtitle: "Emails sent vs payments received",
       content: (
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={reminderEffectivenessData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <BarChart data={reminderEffectivenessData} barGap={8}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis 
               dataKey="name" 
-              tick={{ fontSize: 11 }} 
-              stroke="hsl(var(--muted-foreground))"
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+              axisLine={false}
+              tickLine={false}
             />
             <YAxis 
-              tick={{ fontSize: 11 }} 
-              stroke="hsl(var(--muted-foreground))"
-              width={30}
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+              width={35}
+              axisLine={false}
+              tickLine={false}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
+                backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
-                borderRadius: "8px",
+                borderRadius: "12px",
                 fontSize: "12px",
+                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
               }}
             />
             <Legend 
               verticalAlign="bottom" 
               height={36}
-              formatter={(value) => <span className="text-xs">{value}</span>}
+              formatter={(value) => <span className="text-xs text-muted-foreground">{value === 'emails' ? 'Emails Sent' : 'Payments'}</span>}
             />
             <Bar 
               dataKey="emails" 
-              name="Emails" 
-              fill="hsl(var(--primary))" 
-              radius={[4, 4, 0, 0]}
+              name="emails" 
+              fill="hsl(243, 75%, 58%)" 
+              radius={[6, 6, 0, 0]}
+              maxBarSize={40}
             />
             <Bar 
-              dataKey="paidAfter" 
-              name="Paid After" 
+              dataKey="paid" 
+              name="paid" 
               fill="hsl(142, 76%, 36%)" 
-              radius={[4, 4, 0, 0]}
+              radius={[6, 6, 0, 0]}
+              maxBarSize={40}
             />
           </BarChart>
         </ResponsiveContainer>
@@ -245,10 +255,11 @@ export const DashboardCharts = ({ currencySymbol }: DashboardChartsProps) => {
           {charts.map((chart, index) => (
             <Card
               key={index}
-              className="flex-shrink-0 w-[85vw] max-w-sm scroll-snap-start"
+              className="flex-shrink-0 w-[85vw] max-w-sm scroll-snap-start border-0 shadow-sm"
             >
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">{chart.title}</CardTitle>
+                <CardTitle className="text-sm font-semibold">{chart.title}</CardTitle>
+                <p className="text-xs text-muted-foreground">{chart.subtitle}</p>
               </CardHeader>
               <CardContent>
                 <div className="h-52">{chart.content}</div>
@@ -258,22 +269,27 @@ export const DashboardCharts = ({ currencySymbol }: DashboardChartsProps) => {
         </div>
         
         {/* Scroll indicators */}
-        <div className="flex justify-center gap-1 mt-3">
+        <div className="flex justify-center gap-1.5 mt-4">
           {charts.map((_, index) => (
             <div
               key={index}
-              className="w-2 h-2 rounded-full bg-muted-foreground/30"
+              className="w-1.5 h-1.5 rounded-full bg-primary/30"
             />
           ))}
         </div>
       </div>
 
       {/* Desktop: Grid Layout */}
-      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-5">
         {charts.map((chart, index) => (
-          <Card key={index}>
-            <CardHeader>
-              <CardTitle className="text-base">{chart.title}</CardTitle>
+          <Card key={index} className="border-0 shadow-sm">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-semibold">{chart.title}</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">{chart.subtitle}</p>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">{chart.content}</div>

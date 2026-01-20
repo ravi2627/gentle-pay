@@ -1,10 +1,9 @@
 import { ReactNode, useEffect, useState } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -13,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Bell, DollarSign, LogOut, User } from "lucide-react";
+import { Bell, LogOut, Settings, Search } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -68,47 +68,48 @@ export function DashboardLayout({ children, title, description }: DashboardLayou
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-muted/30">
         {/* Desktop Sidebar - hidden on mobile */}
         <div className="hidden md:block">
           <DashboardSidebar />
         </div>
         
         <SidebarInset className="flex flex-col w-full">
-          {/* Header - responsive */}
-          <header className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border sticky top-0 z-40">
-            <div className="flex items-center gap-3 h-14 px-4">
+          {/* Header - Clean minimal design */}
+          <header className="bg-background border-b border-border sticky top-0 z-40">
+            <div className="flex items-center h-16 px-4 lg:px-6 gap-4">
               {/* Sidebar trigger - desktop only */}
-              <div className="hidden md:block">
-                <SidebarTrigger />
+              <div className="hidden md:flex items-center">
+                <SidebarTrigger className="mr-2" />
               </div>
               
               {/* Logo - mobile only */}
               <div className="md:hidden flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-sm">P</span>
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-accent-foreground flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">P</span>
                 </div>
-                <span className="font-semibold">PayPing</span>
               </div>
               
-              {/* Title - desktop only */}
-              <div className="hidden md:block flex-1">
-                <h1 className="text-lg font-semibold">{title}</h1>
-                {description && (
-                  <p className="text-xs text-muted-foreground">{description}</p>
-                )}
+              {/* Search - desktop */}
+              <div className="hidden md:flex flex-1 max-w-md">
+                <div className="relative w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search invoices, clients..." 
+                    className="pl-9 h-10 bg-muted/50 border-0 focus-visible:ring-1"
+                  />
+                </div>
               </div>
               
-              {/* Spacer for mobile */}
-              <div className="flex-1 md:hidden" />
+              {/* Spacer */}
+              <div className="flex-1" />
               
               {/* Right side actions */}
               <div className="flex items-center gap-2">
                 {/* Currency selector - desktop only */}
                 <div className="hidden lg:block">
                   <Select value={currency} onValueChange={setCurrency}>
-                    <SelectTrigger className="w-20 h-9">
-                      <DollarSign className="w-3 h-3 mr-1" />
+                    <SelectTrigger className="w-[85px] h-9 bg-muted/50 border-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -124,73 +125,82 @@ export function DashboardLayout({ children, title, description }: DashboardLayou
                 {/* Notifications */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="relative h-9 w-9">
-                      <Bell className="w-4 h-4" />
+                    <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full hover:bg-muted">
+                      <Bell className="w-[18px] h-[18px]" />
                       {hasNotifications && (
-                        <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-background" />
                       )}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-72">
-                    <div className="p-3 text-sm">
-                      <p className="font-medium mb-1">Payment received!</p>
-                      <p className="text-muted-foreground text-xs">
-                        Acme Corp paid invoice #INV-001 ($2,500)
-                      </p>
+                  <DropdownMenuContent align="end" className="w-80">
+                    <div className="px-4 py-3 border-b border-border">
+                      <p className="font-semibold text-sm">Notifications</p>
                     </div>
-                    <DropdownMenuItem className="justify-center text-primary">
+                    <div className="p-4">
+                      <div className="flex gap-3">
+                        <div className="w-9 h-9 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                          <span className="text-success text-lg">$</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">Payment received</p>
+                          <p className="text-muted-foreground text-xs mt-0.5">
+                            Acme Corp paid invoice #INV-001 ($2,500)
+                          </p>
+                          <p className="text-muted-foreground text-xs mt-1">2 hours ago</p>
+                        </div>
+                      </div>
+                    </div>
+                    <DropdownMenuItem className="justify-center text-primary font-medium py-3 border-t border-border">
                       View all notifications
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 
-                {/* User Menu with Logout */}
+                {/* User Menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
                       <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-accent-foreground text-white text-xs font-medium">
                           {getInitials(displayName)}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <div className="px-3 py-2">
-                      <p className="font-medium text-sm">{displayName}</p>
-                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    <div className="px-3 py-3 border-b border-border">
+                      <p className="font-semibold text-sm">{displayName}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{user?.email}</p>
+                    </div>
+                    <div className="p-1">
+                      <DropdownMenuItem onClick={() => navigate("/settings")} className="py-2.5">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Settings
+                      </DropdownMenuItem>
                     </div>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate("/settings")}>
-                      <User className="w-4 h-4 mr-2" />
-                      Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Logout
-                    </DropdownMenuItem>
+                    <div className="p-1">
+                      <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive py-2.5">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Log out
+                      </DropdownMenuItem>
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                
-                {/* Demo badge */}
-                <Badge variant="secondary" className="text-xs hidden sm:inline-flex">
-                  Demo
-                </Badge>
               </div>
-            </div>
-            
-            {/* Mobile page title */}
-            <div className="md:hidden px-4 pb-3">
-              <h1 className="text-xl font-bold">{title}</h1>
-              {description && (
-                <p className="text-sm text-muted-foreground">{description}</p>
-              )}
             </div>
           </header>
 
-          {/* Main Content - with bottom padding for mobile nav */}
-          <main className="flex-1 p-4 pb-24 md:pb-6 lg:p-8">
+          {/* Page Title Section */}
+          <div className="bg-background border-b border-border px-4 lg:px-6 py-5">
+            <h1 className="text-xl md:text-2xl font-bold text-foreground">{title}</h1>
+            {description && (
+              <p className="text-sm text-muted-foreground mt-1">{description}</p>
+            )}
+          </div>
+
+          {/* Main Content */}
+          <main className="flex-1 p-4 pb-24 md:pb-6 lg:p-6">
             {children}
           </main>
         </SidebarInset>
