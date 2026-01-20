@@ -53,39 +53,69 @@ export type Database = {
       invoices: {
         Row: {
           amount: number
+          client_email: string | null
           client_id: string | null
           created_at: string
           currency: string
           description: string | null
           due_date: string
+          email_3_days_after: boolean
+          email_3_days_before: boolean
+          email_7_days_after: boolean
+          email_on_due_date: boolean
           id: string
           invoice_number: string
+          payment_link_id: string | null
+          reminder_enabled: boolean
+          reminder_tone: string
+          sms_days_after_due: number | null
+          sms_enabled: boolean
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           amount: number
+          client_email?: string | null
           client_id?: string | null
           created_at?: string
           currency?: string
           description?: string | null
           due_date: string
+          email_3_days_after?: boolean
+          email_3_days_before?: boolean
+          email_7_days_after?: boolean
+          email_on_due_date?: boolean
           id?: string
           invoice_number: string
+          payment_link_id?: string | null
+          reminder_enabled?: boolean
+          reminder_tone?: string
+          sms_days_after_due?: number | null
+          sms_enabled?: boolean
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           amount?: number
+          client_email?: string | null
           client_id?: string | null
           created_at?: string
           currency?: string
           description?: string | null
           due_date?: string
+          email_3_days_after?: boolean
+          email_3_days_before?: boolean
+          email_7_days_after?: boolean
+          email_on_due_date?: boolean
           id?: string
           invoice_number?: string
+          payment_link_id?: string | null
+          reminder_enabled?: boolean
+          reminder_tone?: string
+          sms_days_after_due?: number | null
+          sms_enabled?: boolean
           status?: string
           updated_at?: string
           user_id?: string
@@ -98,6 +128,13 @@ export type Database = {
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoices_payment_link_id_fkey"
+            columns: ["payment_link_id"]
+            isOneToOne: false
+            referencedRelation: "payment_links"
+            referencedColumns: ["id"]
+          },
         ]
       }
       payment_links: {
@@ -107,6 +144,7 @@ export type Database = {
           id: string
           invoice_id: string
           is_active: boolean
+          is_default: boolean
           short_code: string | null
           url: string
           user_id: string
@@ -117,6 +155,7 @@ export type Database = {
           id?: string
           invoice_id: string
           is_active?: boolean
+          is_default?: boolean
           short_code?: string | null
           url: string
           user_id: string
@@ -127,6 +166,7 @@ export type Database = {
           id?: string
           invoice_id?: string
           is_active?: boolean
+          is_default?: boolean
           short_code?: string | null
           url?: string
           user_id?: string
@@ -176,9 +216,12 @@ export type Database = {
           opened_at: string | null
           recipient_email: string | null
           recipient_phone: string | null
+          reminder_type: string | null
+          scheduled_for: string | null
           sent_at: string
           status: string
           template_used: string | null
+          tone: string | null
           type: string
           user_id: string
         }
@@ -189,9 +232,12 @@ export type Database = {
           opened_at?: string | null
           recipient_email?: string | null
           recipient_phone?: string | null
+          reminder_type?: string | null
+          scheduled_for?: string | null
           sent_at?: string
           status?: string
           template_used?: string | null
+          tone?: string | null
           type?: string
           user_id: string
         }
@@ -202,9 +248,12 @@ export type Database = {
           opened_at?: string | null
           recipient_email?: string | null
           recipient_phone?: string | null
+          reminder_type?: string | null
+          scheduled_for?: string | null
           sent_at?: string
           status?: string
           template_used?: string | null
+          tone?: string | null
           type?: string
           user_id?: string
         }
