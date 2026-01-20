@@ -89,7 +89,12 @@ const Dashboard = () => {
 
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
+  const [reminderMessage, setReminderMessage] = useState(
+    "Hi {client},\n\nThis is a friendly reminder that invoice {invoice_id} for ${amount} is due on {due_date}.\n\nPlease let us know if you have any questions.\n\nBest regards"
+  );
   const [formData, setFormData] = useState({
     client: "",
     amount: "",
@@ -331,7 +336,7 @@ const Dashboard = () => {
             <Plus className="w-4 h-4 mr-2" />
             New Invoice
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setIsReminderDialogOpen(true)}>
             <Mail className="w-4 h-4 mr-2" />
             Send Reminder
           </Button>
@@ -506,6 +511,167 @@ const Dashboard = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Reminder Dialog */}
+      <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Send Payment Reminder</DialogTitle>
+            <DialogDescription>
+              Select invoices and customize your reminder message.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Invoice Selection */}
+            <div className="space-y-2">
+              <Label>Select Invoices</Label>
+              <div className="border border-border rounded-lg max-h-48 overflow-y-auto">
+                {invoices.filter((inv) => inv.status !== "paid").length === 0 ? (
+                  <p className="p-4 text-sm text-muted-foreground text-center">
+                    No pending invoices to remind
+                  </p>
+                ) : (
+                  invoices
+                    .filter((inv) => inv.status !== "paid")
+                    .map((invoice) => (
+                      <label
+                        key={invoice.id}
+                        className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer border-b border-border last:border-0"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedInvoices.includes(invoice.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedInvoices([...selectedInvoices, invoice.id]);
+                            } else {
+                              setSelectedInvoices(
+                                selectedInvoices.filter((id) => id !== invoice.id)
+                              );
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm">
+                              {invoice.client}
+                            </span>
+                            <span className="font-medium text-sm">
+                              ${invoice.amount.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{invoice.id}</span>
+                            <span>Due: {invoice.dueDate}</span>
+                          </div>
+                        </div>
+                        {invoice.status === "overdue" && (
+                          <Badge className="bg-destructive/10 text-destructive text-xs">
+                            Overdue
+                          </Badge>
+                        )}
+                      </label>
+                    ))
+                )}
+              </div>
+              {selectedInvoices.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedInvoices.length} invoice(s) selected
+                </p>
+              )}
+            </div>
+
+            {/* Message Template */}
+            <div className="space-y-2">
+              <Label htmlFor="reminderMessage">Reminder Message</Label>
+              <textarea
+                id="reminderMessage"
+                value={reminderMessage}
+                onChange={(e) => setReminderMessage(e.target.value)}
+                className="w-full min-h-32 p-3 border border-border rounded-lg bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                maxLength={1000}
+              />
+              <p className="text-xs text-muted-foreground">
+                Variables: {"{client}"}, {"{invoice_id}"}, {"{amount}"}, {"{due_date}"}
+              </p>
+            </div>
+
+            {/* Channel Selection */}
+            <div className="space-y-2">
+              <Label>Send via</Label>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Email
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1" disabled>
+                  <span className="text-xs">SMS (Pro)</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsReminderDialogOpen(false);
+                setSelectedInvoices([]);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedInvoices.length === 0) {
+                  toast({
+                    title: "No invoices selected",
+                    description: "Please select at least one invoice to send a reminder.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+
+                setIsSubmitting(true);
+                
+                // Simulate sending reminders
+                setTimeout(() => {
+                  // Update reminder count for selected invoices
+                  setInvoices(
+                    invoices.map((inv) =>
+                      selectedInvoices.includes(inv.id)
+                        ? { ...inv, reminders: inv.reminders + 1 }
+                        : inv
+                    )
+                  );
+
+                  setIsSubmitting(false);
+                  setIsReminderDialogOpen(false);
+                  setSelectedInvoices([]);
+
+                  toast({
+                    title: "Reminders sent!",
+                    description: `Payment reminders sent to ${selectedInvoices.length} client(s).`,
+                  });
+                }, 800);
+              }}
+              disabled={isSubmitting || selectedInvoices.length === 0}
+            >
+              {isSubmitting ? (
+                "Sending..."
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Send {selectedInvoices.length > 0 ? `(${selectedInvoices.length})` : ""}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
