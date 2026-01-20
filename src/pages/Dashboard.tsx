@@ -1031,7 +1031,7 @@ const Dashboard = () => {
 
       {/* Payment Links Dialog */}
       <Dialog open={isPaymentLinksDialogOpen} onOpenChange={setIsPaymentLinksDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-lg mx-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Payment Links</DialogTitle>
             <DialogDescription>
@@ -1039,25 +1039,25 @@ const Dashboard = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <Label className="shrink-0">Your Payment Links</Label>
+                <Label className="shrink-0 text-sm font-medium">Your Payment Links</Label>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="shrink-0"
+                  className="shrink-0 h-8 px-2 text-xs"
                   onClick={() => setIsAddingLink(!isAddingLink)}
                 >
-                  <Plus className="w-4 h-4 mr-1" />
+                  <Plus className="w-3 h-3 mr-1" />
                   Add New
                 </Button>
               </div>
 
               {isAddingLink && (
-                <div className="p-4 border border-border rounded-lg bg-muted/30 space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="linkName">Link Name</Label>
+                <div className="p-3 sm:p-4 border border-border rounded-lg bg-muted/30 space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="linkName" className="text-xs">Link Name</Label>
                     <Input
                       id="linkName"
                       placeholder="e.g., Stripe Invoice Link"
@@ -1066,10 +1066,11 @@ const Dashboard = () => {
                         setLinkFormData({ ...linkFormData, name: e.target.value })
                       }
                       maxLength={50}
+                      className="h-9 text-sm"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="linkUrl">Payment URL</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="linkUrl" className="text-xs">Payment URL</Label>
                     <Input
                       id="linkUrl"
                       type="url"
@@ -1079,10 +1080,11 @@ const Dashboard = () => {
                         setLinkFormData({ ...linkFormData, url: e.target.value })
                       }
                       maxLength={500}
+                      className="h-9 text-sm"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="linkDescription">Description (optional)</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="linkDescription" className="text-xs">Description (optional)</Label>
                     <Input
                       id="linkDescription"
                       placeholder="Brief description..."
@@ -1091,11 +1093,13 @@ const Dashboard = () => {
                         setLinkFormData({ ...linkFormData, description: e.target.value })
                       }
                       maxLength={100}
+                      className="h-9 text-sm"
                     />
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 pt-1">
                     <Button
                       size="sm"
+                      className="h-8 text-xs"
                       onClick={() => {
                         const name = linkFormData.name.trim();
                         const url = linkFormData.url.trim();
@@ -1147,6 +1151,7 @@ const Dashboard = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="h-8 text-xs"
                       onClick={() => {
                         setIsAddingLink(false);
                         setLinkFormData({ name: "", url: "", description: "" });
@@ -1167,27 +1172,29 @@ const Dashboard = () => {
                   paymentLinks.map((link) => (
                     <div
                       key={link.id}
-                      className="p-3 flex items-start gap-3 hover:bg-muted/30 transition-colors"
+                      className="p-3 hover:bg-muted/30 transition-colors"
                     >
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Link className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm">{link.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {link.url}
-                        </p>
-                        {link.description && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {link.description}
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Link className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm leading-tight">{link.name}</p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {link.url}
                           </p>
-                        )}
+                          {link.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {link.description}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center justify-end gap-1 mt-2 ml-10">
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
                           onClick={() => {
                             navigator.clipboard.writeText(link.url);
                             toast({
@@ -1196,20 +1203,22 @@ const Dashboard = () => {
                             });
                           }}
                         >
-                          <Copy className="w-4 h-4" />
+                          <Copy className="w-3 h-3 mr-1" />
+                          Copy
                         </Button>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
                           onClick={() => window.open(link.url, "_blank")}
                         >
-                          <ExternalLink className="w-4 h-4" />
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          Open
                         </Button>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                           onClick={() => {
                             setPaymentLinks(paymentLinks.filter((l) => l.id !== link.id));
                             toast({
@@ -1218,7 +1227,7 @@ const Dashboard = () => {
                             });
                           }}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </div>
@@ -1235,9 +1244,10 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="mt-4">
             <Button
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => setIsPaymentLinksDialogOpen(false)}
             >
               Done
