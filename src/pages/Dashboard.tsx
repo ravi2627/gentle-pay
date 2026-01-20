@@ -23,14 +23,15 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { KPICards } from "@/components/dashboard/KPICards";
+import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
+import { SMSUsageCard } from "@/components/dashboard/SMSUsageCard";
+import { TeamManagement } from "@/components/dashboard/TeamManagement";
 import {
   CreditCard,
-  DollarSign,
   Mail,
   Plus,
   Send,
-  TrendingUp,
-  Users,
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -57,6 +58,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Invoice {
   id: string;
@@ -74,6 +76,15 @@ interface PaymentLink {
   description: string;
   createdAt: string;
 }
+
+const CURRENCIES = [
+  { code: "USD", symbol: "$", name: "US Dollar" },
+  { code: "EUR", symbol: "€", name: "Euro" },
+  { code: "GBP", symbol: "£", name: "British Pound" },
+  { code: "INR", symbol: "₹", name: "Indian Rupee" },
+  { code: "AUD", symbol: "$", name: "Australian Dollar" },
+  { code: "CAD", symbol: "$", name: "Canadian Dollar" },
+];
 
 const initialPaymentLinks: PaymentLink[] = [
   {
@@ -125,12 +136,26 @@ const initialInvoices: Invoice[] = [
     dueDate: "Jan 28, 2026",
     reminders: 0,
   },
+  {
+    id: "INV-005",
+    client: "Acme Corp",
+    amount: 5000,
+    status: "paid",
+    dueDate: "Dec 20, 2025",
+    reminders: 1,
+  },
 ];
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // User preferences (simulated)
+  const [currency, setCurrency] = useState("USD");
+  const [plan] = useState<"free" | "pro" | "agency">("pro");
+
+  const currencySymbol = CURRENCIES.find((c) => c.code === currency)?.symbol || "$";
 
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>(initialPaymentLinks);
@@ -144,7 +169,7 @@ const Dashboard = () => {
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [reminderMessage, setReminderMessage] = useState(
-    "Hi {client},\n\nThis is a friendly reminder that invoice {invoice_id} for ${amount} is due on {due_date}.\n\nPlease let us know if you have any questions.\n\nBest regards"
+    "Hi {client},\n\nThis is a friendly reminder that invoice {invoice_id} for {currency}{amount} is due on {due_date}.\n\nPlease let us know if you have any questions.\n\nBest regards"
   );
   const [formData, setFormData] = useState({
     client: "",
@@ -176,7 +201,6 @@ const Dashboard = () => {
   const handleCreateInvoice = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     const clientName = formData.client.trim();
     const amount = parseFloat(formData.amount);
 
@@ -192,7 +216,7 @@ const Dashboard = () => {
     if (isNaN(amount) || amount <= 0 || amount > 10000000) {
       toast({
         title: "Invalid amount",
-        description: "Please enter a valid amount between $0.01 and $10,000,000.",
+        description: "Please enter a valid amount between 0.01 and 10,000,000.",
         variant: "destructive",
       });
       return;
@@ -209,7 +233,6 @@ const Dashboard = () => {
 
     setIsSubmitting(true);
 
-    // Simulate API call
     setTimeout(() => {
       const newInvoice: Invoice = {
         id: `INV-${String(invoices.length + 1).padStart(3, "0")}`,
@@ -254,7 +277,7 @@ const Dashboard = () => {
     if (isNaN(amount) || amount <= 0 || amount > 10000000) {
       toast({
         title: "Invalid amount",
-        description: "Please enter a valid amount between $0.01 and $10,000,000.",
+        description: "Please enter a valid amount between 0.01 and 10,000,000.",
         variant: "destructive",
       });
       return;
@@ -317,7 +340,6 @@ const Dashboard = () => {
 
   const openEditDialog = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
-    // Parse the date string back to YYYY-MM-DD format for the input
     const parsedDate = new Date(invoice.dueDate);
     const formattedDate = parsedDate.toISOString().split("T")[0];
     setEditFormData({
@@ -362,192 +384,195 @@ const Dashboard = () => {
     }
   };
 
-  const totalOutstanding = invoices
-    .filter((inv) => inv.status !== "paid")
-    .reduce((sum, inv) => sum + inv.amount, 0);
-
-  const pendingCount = invoices.filter((inv) => inv.status !== "paid").length;
-
   return (
     <DashboardLayout
       title={`Welcome back, ${user?.name || "User"}! 👋`}
       description="Here's what's happening with your invoices today."
     >
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Outstanding
-              </CardTitle>
-              <DollarSign className="w-4 h-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                ${totalOutstanding.toLocaleString()}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Across {pendingCount} invoices
-              </p>
-            </CardContent>
-          </Card>
+      {/* KPI Cards */}
+      <KPICards 
+        invoices={invoices} 
+        currency={currency} 
+        currencySymbol={currencySymbol} 
+      />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Collected This Month
-              </CardTitle>
-              <TrendingUp className="w-4 h-4 text-success" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">$12,400</div>
-              <p className="text-xs text-success">+23% from last month</p>
-            </CardContent>
-          </Card>
+      {/* Actions */}
+      <div className="flex flex-wrap gap-3 mt-8 mb-6">
+        <Button onClick={() => setIsDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          New Invoice
+        </Button>
+        <Button variant="outline" onClick={() => setIsReminderDialogOpen(true)}>
+          <Mail className="w-4 h-4 mr-2" />
+          Send Reminder
+        </Button>
+        <Button variant="outline" onClick={() => setIsPaymentLinksDialogOpen(true)}>
+          <CreditCard className="w-4 h-4 mr-2" />
+          Payment Links
+        </Button>
+      </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Reminders Sent
-              </CardTitle>
-              <Send className="w-4 h-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">47</div>
-              <p className="text-xs text-muted-foreground">This month</p>
-            </CardContent>
-          </Card>
+      {/* Tabs for Dashboard Views */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="invoices">Invoices</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="team">Team</TabsTrigger>
+        </TabsList>
 
-          <Card className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigate("/clients")}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Active Clients
-              </CardTitle>
-              <Users className="w-4 h-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">
-                3 with pending invoices
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          {/* Charts */}
+          <DashboardCharts currencySymbol={currencySymbol} />
 
-        {/* Actions */}
-        <div className="flex flex-wrap gap-3 mb-8">
-          <Button onClick={() => setIsDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Invoice
-          </Button>
-          <Button variant="outline" onClick={() => setIsReminderDialogOpen(true)}>
-            <Mail className="w-4 h-4 mr-2" />
-            Send Reminder
-          </Button>
-          <Button variant="outline" onClick={() => setIsPaymentLinksDialogOpen(true)}>
-            <CreditCard className="w-4 h-4 mr-2" />
-            Payment Links
-          </Button>
-        </div>
-
-        {/* Invoices Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Recent Invoices</span>
-              <Button variant="ghost" size="sm">
-                View All
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      Invoice
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      Client
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      Amount
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      Due Date
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      Reminders
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                      Status
-                    </th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoices.map((invoice) => (
-                    <tr
+          {/* SMS Usage & Quick Stats */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <SMSUsageCard plan={plan} />
+            
+            {/* Recent Activity */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-base">Recent Invoices</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {invoices.slice(0, 4).map((invoice) => (
+                    <div
                       key={invoice.id}
-                      className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors"
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
                     >
-                      <td className="py-4 px-4 font-medium">{invoice.id}</td>
-                      <td className="py-4 px-4">{invoice.client}</td>
-                      <td className="py-4 px-4 font-medium">
-                        ${invoice.amount.toLocaleString()}
-                      </td>
-                      <td className="py-4 px-4 text-muted-foreground">
-                        {invoice.dueDate}
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-muted-foreground">
-                          {invoice.reminders} sent
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <p className="font-medium text-sm">{invoice.client}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {invoice.id} • Due {invoice.dueDate}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium">
+                          {currencySymbol}{invoice.amount.toLocaleString()}
                         </span>
-                      </td>
-                      <td className="py-4 px-4">
                         {getStatusBadge(invoice.status)}
-                      </td>
-                      <td className="py-4 px-4 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEditDialog(invoice)}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Edit Invoice
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => openDeleteDialog(invoice)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-        {/* Demo Notice */}
-        <div className="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-          <p className="text-sm text-center text-muted-foreground">
-            🎉 <strong>Demo Mode:</strong> This is a preview of the PayPing
-            dashboard. Connect a backend to enable real invoice management and
-            automated reminders.
-          </p>
-        </div>
+        {/* Invoices Tab */}
+        <TabsContent value="invoices">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>All Invoices</span>
+                <Button variant="ghost" size="sm">
+                  Export
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        Invoice
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        Client
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        Amount
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        Due Date
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        Reminders
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                        Status
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map((invoice) => (
+                      <tr
+                        key={invoice.id}
+                        className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors"
+                      >
+                        <td className="py-4 px-4 font-medium">{invoice.id}</td>
+                        <td className="py-4 px-4">{invoice.client}</td>
+                        <td className="py-4 px-4 font-medium">
+                          {currencySymbol}{invoice.amount.toLocaleString()}
+                        </td>
+                        <td className="py-4 px-4 text-muted-foreground">
+                          {invoice.dueDate}
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className="text-muted-foreground">
+                            {invoice.reminders} sent
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">{getStatusBadge(invoice.status)}</td>
+                        <td className="py-4 px-4 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditDialog(invoice)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit Invoice
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => openDeleteDialog(invoice)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-6">
+          <DashboardCharts currencySymbol={currencySymbol} />
+        </TabsContent>
+
+        {/* Team Tab */}
+        <TabsContent value="team">
+          <TeamManagement plan={plan} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Demo Notice */}
+      <div className="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+        <p className="text-sm text-center text-muted-foreground">
+          🎉 <strong>Demo Mode:</strong> This is a preview of the PayPing
+          dashboard. Connect a backend to enable real invoice management and
+          automated reminders.
+        </p>
+      </div>
 
       {/* New Invoice Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -575,7 +600,7 @@ const Dashboard = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount ($)</Label>
+              <Label htmlFor="amount">Amount ({currencySymbol})</Label>
               <Input
                 id="amount"
                 type="number"
@@ -653,7 +678,6 @@ const Dashboard = () => {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Invoice Selection */}
             <div className="space-y-2">
               <Label>Select Invoices</Label>
               <div className="border border-border rounded-lg max-h-48 overflow-y-auto">
@@ -689,7 +713,7 @@ const Dashboard = () => {
                               {invoice.client}
                             </span>
                             <span className="font-medium text-sm">
-                              ${invoice.amount.toLocaleString()}
+                              {currencySymbol}{invoice.amount.toLocaleString()}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -713,7 +737,6 @@ const Dashboard = () => {
               )}
             </div>
 
-            {/* Message Template */}
             <div className="space-y-2">
               <Label htmlFor="reminderMessage">Reminder Message</Label>
               <textarea
@@ -724,11 +747,10 @@ const Dashboard = () => {
                 maxLength={1000}
               />
               <p className="text-xs text-muted-foreground">
-                Variables: {"{client}"}, {"{invoice_id}"}, {"{amount}"}, {"{due_date}"}
+                Variables: {"{client}"}, {"{invoice_id}"}, {"{amount}"}, {"{due_date}"}, {"{currency}"}
               </p>
             </div>
 
-            {/* Channel Selection */}
             <div className="space-y-2">
               <Label>Send via</Label>
               <div className="flex gap-2">
@@ -736,8 +758,8 @@ const Dashboard = () => {
                   <Mail className="w-4 h-4 mr-2" />
                   Email
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1" disabled>
-                  <span className="text-xs">SMS (Pro)</span>
+                <Button variant="outline" size="sm" className="flex-1" disabled={plan === "free"}>
+                  <span className="text-xs">{plan === "free" ? "SMS (Pro)" : "SMS"}</span>
                 </Button>
               </div>
             </div>
@@ -766,10 +788,8 @@ const Dashboard = () => {
                 }
 
                 setIsSubmitting(true);
-                
-                // Simulate sending reminders
+
                 setTimeout(() => {
-                  // Update reminder count for selected invoices
                   setInvoices(
                     invoices.map((inv) =>
                       selectedInvoices.includes(inv.id)
@@ -814,7 +834,6 @@ const Dashboard = () => {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Existing Payment Links */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Your Payment Links</Label>
@@ -828,7 +847,6 @@ const Dashboard = () => {
                 </Button>
               </div>
 
-              {/* Add New Link Form */}
               {isAddingLink && (
                 <div className="p-4 border border-border rounded-lg bg-muted/30 space-y-3">
                   <div className="space-y-2">
@@ -933,7 +951,6 @@ const Dashboard = () => {
                 </div>
               )}
 
-              {/* Links List */}
               <div className="border border-border rounded-lg divide-y divide-border">
                 {paymentLinks.length === 0 ? (
                   <p className="p-4 text-sm text-muted-foreground text-center">
@@ -1003,7 +1020,6 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Info Note */}
             <div className="p-3 bg-muted/50 rounded-lg">
               <p className="text-xs text-muted-foreground">
                 <strong>Tip:</strong> Add your Stripe, PayPal, or other payment links here.
@@ -1048,7 +1064,7 @@ const Dashboard = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="editAmount">Amount ($)</Label>
+              <Label htmlFor="editAmount">Amount ({currencySymbol})</Label>
               <Input
                 id="editAmount"
                 type="number"
@@ -1119,7 +1135,7 @@ const Dashboard = () => {
             <AlertDialogTitle>Delete Invoice?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete invoice {selectedInvoice?.id} for{" "}
-              <strong>{selectedInvoice?.client}</strong> (${selectedInvoice?.amount.toLocaleString()})?
+              <strong>{selectedInvoice?.client}</strong> ({currencySymbol}{selectedInvoice?.amount.toLocaleString()})?
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

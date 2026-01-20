@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -13,20 +14,58 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import {
   Bell,
   Calendar,
   Clock,
+  CreditCard,
+  DollarSign,
+  Globe,
   Mail,
   MessageSquare,
   Save,
+  Trash2,
   User,
+  Building2,
 } from "lucide-react";
 
+const CURRENCIES = [
+  { code: "USD", symbol: "$", name: "US Dollar" },
+  { code: "EUR", symbol: "€", name: "Euro" },
+  { code: "GBP", symbol: "£", name: "British Pound" },
+  { code: "INR", symbol: "₹", name: "Indian Rupee" },
+  { code: "AUD", symbol: "$", name: "Australian Dollar" },
+  { code: "CAD", symbol: "$", name: "Canadian Dollar" },
+];
+
+const TIMEZONES = [
+  { value: "UTC", label: "UTC (GMT+0)" },
+  { value: "America/New_York", label: "Eastern Time (ET)" },
+  { value: "America/Chicago", label: "Central Time (CT)" },
+  { value: "America/Denver", label: "Mountain Time (MT)" },
+  { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
+  { value: "Europe/London", label: "London (GMT)" },
+  { value: "Europe/Paris", label: "Paris (CET)" },
+  { value: "Asia/Tokyo", label: "Tokyo (JST)" },
+  { value: "Asia/Kolkata", label: "India (IST)" },
+  { value: "Australia/Sydney", label: "Sydney (AEST)" },
+];
+
 const Settings = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { toast } = useToast();
 
   const [isSaving, setIsSaving] = useState(false);
@@ -37,6 +76,8 @@ const Settings = () => {
     email: user?.email || "",
     company: "",
     timezone: "UTC",
+    currency: "USD",
+    emailSenderName: "",
   });
 
   // Notification preferences
@@ -45,6 +86,7 @@ const Settings = () => {
     paymentReceived: true,
     weeklyReport: true,
     productUpdates: false,
+    lowSMSBalance: true,
   });
 
   // Reminder schedule
@@ -55,7 +97,12 @@ const Settings = () => {
     sendTime: "09:00",
     includePaymentLink: true,
     enableSMS: false,
+    businessHoursOnly: true,
+    autoStopOnPayment: true,
   });
+
+  // Reminder tone
+  const [reminderTone, setReminderTone] = useState<"polite" | "professional" | "firm">("polite");
 
   useEffect(() => {
     if (user) {
@@ -70,6 +117,7 @@ const Settings = () => {
   const handleSaveProfile = () => {
     const name = profile.name.trim();
     const company = profile.company.trim();
+    const senderName = profile.emailSenderName.trim();
 
     if (!name || name.length > 100) {
       toast({
@@ -84,6 +132,15 @@ const Settings = () => {
       toast({
         title: "Invalid company name",
         description: "Company name must be less than 100 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (senderName.length > 50) {
+      toast({
+        title: "Invalid sender name",
+        description: "Email sender name must be less than 50 characters.",
         variant: "destructive",
       });
       return;
@@ -120,6 +177,15 @@ const Settings = () => {
       });
     }, 500);
   };
+
+  const handleDeleteAccount = () => {
+    toast({
+      title: "Account deletion requested",
+      description: "We'll send you a confirmation email to complete the deletion process.",
+    });
+  };
+
+  const currencySymbol = CURRENCIES.find((c) => c.code === profile.currency)?.symbol || "$";
 
   return (
     <DashboardLayout title="Settings" description="Manage your account and preferences">
@@ -164,15 +230,85 @@ const Settings = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company">Company (optional)</Label>
-                <Input
-                  id="company"
-                  value={profile.company}
-                  onChange={(e) =>
-                    setProfile({ ...profile, company: e.target.value })
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="company"
+                    value={profile.company}
+                    onChange={(e) =>
+                      setProfile({ ...profile, company: e.target.value })
+                    }
+                    placeholder="Your company name"
+                    className="pl-9"
+                    maxLength={100}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="senderName">Email Sender Name</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="senderName"
+                    value={profile.emailSenderName}
+                    onChange={(e) =>
+                      setProfile({ ...profile, emailSenderName: e.target.value })
+                    }
+                    placeholder="e.g., John from Acme"
+                    className="pl-9"
+                    maxLength={50}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  How your name appears in reminder emails
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button onClick={handleSaveProfile} disabled={isSaving}>
+                <Save className="w-4 h-4 mr-2" />
+                Save Profile
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Currency & Timezone */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="w-5 h-5" />
+              Regional Settings
+            </CardTitle>
+            <CardDescription>
+              Currency and timezone preferences
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="currency">Currency</Label>
+                <Select
+                  value={profile.currency}
+                  onValueChange={(value) =>
+                    setProfile({ ...profile, currency: value })
                   }
-                  placeholder="Your company name"
-                  maxLength={100}
-                />
+                >
+                  <SelectTrigger id="currency">
+                    <DollarSign className="w-4 h-4 mr-2 text-muted-foreground" />
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((cur) => (
+                      <SelectItem key={cur.code} value={cur.code}>
+                        {cur.symbol} {cur.code} - {cur.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Used for displaying amounts in invoices and dashboards
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="timezone">Timezone</Label>
@@ -183,26 +319,26 @@ const Settings = () => {
                   }
                 >
                   <SelectTrigger id="timezone">
+                    <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
                     <SelectValue placeholder="Select timezone" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="UTC">UTC (GMT+0)</SelectItem>
-                    <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                    <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                    <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                    <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                    <SelectItem value="Europe/London">London (GMT)</SelectItem>
-                    <SelectItem value="Europe/Paris">Paris (CET)</SelectItem>
-                    <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
-                    <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
+                    {TIMEZONES.map((tz) => (
+                      <SelectItem key={tz.value} value={tz.value}>
+                        {tz.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Reminders will be sent based on this timezone
+                </p>
               </div>
             </div>
             <div className="flex justify-end pt-2">
               <Button onClick={handleSaveProfile} disabled={isSaving}>
                 <Save className="w-4 h-4 mr-2" />
-                Save Profile
+                Save Settings
               </Button>
             </div>
           </CardContent>
@@ -268,6 +404,21 @@ const Settings = () => {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
+                  <Label className="text-base">Low SMS Balance</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Get alerted when your SMS credits are running low
+                  </p>
+                </div>
+                <Switch
+                  checked={notifications.lowSMSBalance}
+                  onCheckedChange={(checked) =>
+                    setNotifications({ ...notifications, lowSMSBalance: checked })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
                   <Label className="text-base">Product Updates</Label>
                   <p className="text-sm text-muted-foreground">
                     Stay informed about new features and improvements
@@ -302,6 +453,49 @@ const Settings = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Reminder Tone */}
+            <div className="space-y-3">
+              <Label className="text-base">Reminder Tone</Label>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setReminderTone("polite")}
+                  className={`p-3 text-center rounded-lg border-2 transition-all ${
+                    reminderTone === "polite"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <span className="text-lg">😊</span>
+                  <p className="text-sm font-medium mt-1">Polite</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReminderTone("professional")}
+                  className={`p-3 text-center rounded-lg border-2 transition-all ${
+                    reminderTone === "professional"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <span className="text-lg">💼</span>
+                  <p className="text-sm font-medium mt-1">Professional</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReminderTone("firm")}
+                  className={`p-3 text-center rounded-lg border-2 transition-all ${
+                    reminderTone === "firm"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <span className="text-lg">📋</span>
+                  <p className="text-sm font-medium mt-1">Firm</p>
+                </button>
+              </div>
+            </div>
+
             {/* Reminder Intervals */}
             <div className="space-y-4">
               <Label className="text-base">Reminder Intervals</Label>
@@ -428,6 +622,42 @@ const Settings = () => {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
+                  <Label className="text-base">Business Hours Only</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Only send reminders during business hours (9 AM - 6 PM)
+                  </p>
+                </div>
+                <Switch
+                  checked={reminderSchedule.businessHoursOnly}
+                  onCheckedChange={(checked) =>
+                    setReminderSchedule({
+                      ...reminderSchedule,
+                      businessHoursOnly: checked,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Auto-Stop on Payment</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically stop reminders when invoice is marked as paid
+                  </p>
+                </div>
+                <Switch
+                  checked={reminderSchedule.autoStopOnPayment}
+                  onCheckedChange={(checked) =>
+                    setReminderSchedule({
+                      ...reminderSchedule,
+                      autoStopOnPayment: checked,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-muted-foreground" />
                     <Label className="text-base">SMS Reminders</Label>
@@ -454,6 +684,80 @@ const Settings = () => {
                 <Save className="w-4 h-4 mr-2" />
                 Save Schedule
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Subscription / Billing */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Subscription & Billing
+            </CardTitle>
+            <CardDescription>
+              Manage your subscription and payment details
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-lg">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold">Pro Plan</h3>
+                  <Badge>Active</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  $19/month • Renews on Feb 1, 2026
+                </p>
+              </div>
+              <Button variant="outline">Manage Subscription</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Danger Zone */}
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              Danger Zone
+            </CardTitle>
+            <CardDescription>
+              Irreversible actions that affect your account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Delete Account</p>
+                <p className="text-sm text-muted-foreground">
+                  Permanently delete your account and all associated data
+                </p>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">Delete Account</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete your
+                      account, all your clients, invoices, and remove your data from
+                      our servers.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAccount}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Yes, delete my account
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </CardContent>
         </Card>
