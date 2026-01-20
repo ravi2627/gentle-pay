@@ -163,7 +163,6 @@ const Dashboard = () => {
     url: "",
     description: "",
   });
-  };
 
   const resetForm = () => {
     setFormData({
