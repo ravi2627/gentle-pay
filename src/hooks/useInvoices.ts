@@ -25,12 +25,24 @@ export interface InvoiceWithClient extends Invoice {
 
 export interface CreateInvoiceData {
   client_id?: string;
+  client_name?: string;
   invoice_number: string;
   amount: number;
   currency?: string;
   due_date: string;
   status?: Invoice["status"];
   description?: string;
+  // Reminder schedule fields
+  client_email?: string;
+  payment_link_id?: string;
+  reminder_enabled?: boolean;
+  reminder_tone?: string;
+  email_3_days_before?: boolean;
+  email_on_due_date?: boolean;
+  email_3_days_after?: boolean;
+  email_7_days_after?: boolean;
+  sms_enabled?: boolean;
+  sms_days_after_due?: number;
 }
 
 export interface UpdateInvoiceData extends Partial<CreateInvoiceData> {
@@ -95,17 +107,65 @@ export const useInvoices = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      let clientId = invoiceData.client_id;
+
+      // If client name provided but no ID, create/find client
+      if (invoiceData.client_name && !clientId) {
+        // Check if client exists
+        const { data: existingClient } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("name", invoiceData.client_name)
+          .maybeSingle();
+
+        if (existingClient) {
+          clientId = existingClient.id;
+          // Update client email if provided
+          if (invoiceData.client_email) {
+            await supabase
+              .from("clients")
+              .update({ email: invoiceData.client_email })
+              .eq("id", existingClient.id);
+          }
+        } else {
+          // Create new client
+          const { data: newClient, error: clientError } = await supabase
+            .from("clients")
+            .insert({
+              user_id: user.id,
+              name: invoiceData.client_name,
+              email: invoiceData.client_email || null,
+            })
+            .select()
+            .single();
+
+          if (clientError) throw clientError;
+          clientId = newClient.id;
+        }
+      }
+
       const { data, error } = await supabase
         .from("invoices")
         .insert({
           user_id: user.id,
-          client_id: invoiceData.client_id || null,
+          client_id: clientId || null,
           invoice_number: invoiceData.invoice_number,
           amount: invoiceData.amount,
           currency: invoiceData.currency || "INR",
           due_date: invoiceData.due_date,
           status: invoiceData.status || "pending",
           description: invoiceData.description || null,
+          client_email: invoiceData.client_email || null,
+          payment_link_id: invoiceData.payment_link_id || null,
+          reminder_enabled: invoiceData.reminder_enabled ?? true,
+          reminder_tone: invoiceData.reminder_tone || "polite",
+          email_3_days_before: invoiceData.email_3_days_before ?? true,
+          email_on_due_date: invoiceData.email_on_due_date ?? true,
+          email_3_days_after: invoiceData.email_3_days_after ?? true,
+          email_7_days_after: invoiceData.email_7_days_after ?? false,
+          sms_enabled: invoiceData.sms_enabled ?? false,
+          sms_days_after_due: invoiceData.sms_days_after_due ?? 3,
         })
         .select()
         .single();
@@ -115,6 +175,7 @@ export const useInvoices = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
       toast({
         title: "Invoice created!",
         description: `Invoice ${data.invoice_number} has been created.`,
