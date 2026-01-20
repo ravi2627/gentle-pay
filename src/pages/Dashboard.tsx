@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, Link as RouterLink } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,17 +22,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import {
-  Bell,
   CreditCard,
   DollarSign,
   Mail,
   Plus,
   Send,
-  Settings,
   TrendingUp,
   Users,
-  LogOut,
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -130,7 +128,7 @@ const initialInvoices: Invoice[] = [
 ];
 
 const Dashboard = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -165,16 +163,6 @@ const Dashboard = () => {
     url: "",
     description: "",
   });
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-    }
-  }, [isAuthenticated, navigate]);
-
-  const handleLogout = () => {
-    logout();
-    navigate("/");
   };
 
   const resetForm = () => {
@@ -347,10 +335,6 @@ const Dashboard = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  if (!isAuthenticated) {
-    return null;
-  }
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "paid":
@@ -386,55 +370,12 @@ const Dashboard = () => {
   const pendingCount = invoices.filter((inv) => inv.status !== "paid").length;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Dashboard Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <span className="text-xl font-bold text-primary">PayPing</span>
-              <Badge variant="secondary" className="text-xs">
-                Demo Mode
-              </Badge>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon">
-                <Bell className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <RouterLink to="/settings">
-                  <Settings className="w-5 h-5" />
-                </RouterLink>
-              </Button>
-              <div className="flex items-center gap-3 pl-4 border-l border-border">
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-medium">{user?.name}</p>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
-                </div>
-                <Button variant="ghost" size="icon" onClick={handleLogout}>
-                  <LogOut className="w-5 h-5" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold mb-2">
-            Welcome back, {user?.name}! 👋
-          </h1>
-          <p className="text-muted-foreground">
-            Here's what's happening with your invoices today.
-          </p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <DashboardLayout
+      title={`Welcome back, ${user?.name || "User"}! 👋`}
+      description="Here's what's happening with your invoices today."
+    >
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -608,7 +549,6 @@ const Dashboard = () => {
             automated reminders.
           </p>
         </div>
-      </main>
 
       {/* New Invoice Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -1197,7 +1137,7 @@ const Dashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </DashboardLayout>
   );
 };
 
