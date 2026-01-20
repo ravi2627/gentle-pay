@@ -139,7 +139,7 @@ const Dashboard = () => {
     markAsPaid,
     stats: invoiceStats 
   } = useInvoices();
-  const { clients, isLoading: clientsLoading } = useClients();
+  const { clients, isLoading: clientsLoading, createClient: createClientMutation } = useClients();
   const { reminders, stats: reminderStats, sendReminder: sendDbReminder } = useReminders();
 
   // Email tracking hook (for legacy compatibility)
@@ -248,26 +248,43 @@ const Dashboard = () => {
 
     setIsSubmitting(true);
     
-    // Generate invoice number
-    const invoiceNumber = `INV-${String(dbInvoices.length + 1).padStart(3, "0")}`;
-    
-    createInvoice.mutate({
-      invoice_number: invoiceNumber,
-      amount: amount,
-      due_date: formData.dueDate,
-      status: formData.status === "overdue" ? "overdue" : "pending",
-      client_id: formData.clientId || undefined,
-      currency: currency,
-    }, {
-      onSuccess: () => {
-        setIsSubmitting(false);
-        setIsDialogOpen(false);
-        resetForm();
-      },
-      onError: () => {
-        setIsSubmitting(false);
+    try {
+      let clientId = formData.clientId;
+      
+      // Auto-create client if new name is entered
+      if (!clientId && clientName) {
+        const newClient = await createClientMutation.mutateAsync({ name: clientName });
+        clientId = newClient.id;
       }
-    });
+      
+      // Generate invoice number
+      const invoiceNumber = `INV-${String(dbInvoices.length + 1).padStart(3, "0")}`;
+      
+      createInvoice.mutate({
+        invoice_number: invoiceNumber,
+        amount: amount,
+        due_date: formData.dueDate,
+        status: formData.status === "overdue" ? "overdue" : "pending",
+        client_id: clientId || undefined,
+        currency: currency,
+      }, {
+        onSuccess: () => {
+          setIsSubmitting(false);
+          setIsDialogOpen(false);
+          resetForm();
+        },
+        onError: () => {
+          setIsSubmitting(false);
+        }
+      });
+    } catch (error) {
+      setIsSubmitting(false);
+      toast({
+        title: "Error",
+        description: "Failed to create invoice. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditInvoice = async () => {
