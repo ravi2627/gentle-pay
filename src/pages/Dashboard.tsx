@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -277,8 +277,10 @@ const Dashboard = () => {
               <Button variant="ghost" size="icon">
                 <Bell className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon">
-                <Settings className="w-5 h-5" />
+              <Button variant="ghost" size="icon" asChild>
+                <RouterLink to="/settings">
+                  <Settings className="w-5 h-5" />
+                </RouterLink>
               </Button>
               <div className="flex items-center gap-3 pl-4 border-l border-border">
                 <div className="text-right hidden sm:block">
