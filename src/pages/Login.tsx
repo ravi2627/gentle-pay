@@ -13,38 +13,31 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { login } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Demo login - simulates authentication
-    setTimeout(() => {
-      // Check if user has logged in before (returning user)
-      const existingUsers = JSON.parse(localStorage.getItem("demo_users") || "[]");
-      const existingUser = existingUsers.find((u: { email: string }) => u.email === email);
-      
-      login(email, !!existingUser);
-      setIsLoading(false);
-      
-      if (existingUser?.hasCompletedOnboarding) {
-        // Returning user who completed onboarding
-        toast({
-          title: "Welcome back!",
-          description: "You've been logged in successfully.",
-        });
-        navigate("/dashboard");
-      } else {
-        // New user or hasn't completed onboarding
-        toast({
-          title: "Welcome to PayPing!",
-          description: "Let's get you set up.",
-        });
-        navigate("/onboarding");
-      }
-    }, 800);
+    const { error } = await signIn(email, password);
+    
+    setIsLoading(false);
+    
+    if (error) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Welcome back!",
+      description: "You've been logged in successfully.",
+    });
+    navigate("/dashboard");
   };
 
   return (

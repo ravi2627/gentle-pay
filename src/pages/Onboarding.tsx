@@ -52,7 +52,7 @@ const TIMEZONES = [
 
 const Onboarding = () => {
   const navigate = useNavigate();
-  const { user, completeOnboarding } = useAuth();
+  const { user, updateProfile } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const totalSteps = 6;
@@ -167,9 +167,11 @@ const Onboarding = () => {
     }
   };
 
-  const handleComplete = () => {
-    // Mark onboarding as complete
-    completeOnboarding();
+  const handleComplete = async () => {
+    // Update profile with business name
+    if (businessData.businessName) {
+      await updateProfile({ business_name: businessData.businessName });
+    }
     toast({
       title: "Welcome to PayPing! 🎉",
       description: "Your first reminder is scheduled. Let's get you paid!",

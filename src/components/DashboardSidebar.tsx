@@ -40,14 +40,16 @@ const secondaryNavItems = [
 
 export function DashboardSidebar() {
   const { state } = useSidebar();
-  const { user, logout } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const collapsed = state === "collapsed";
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate("/");
   };
+
+  const displayName = profile?.business_name || user?.email?.split("@")[0] || "User";
 
   return (
     <Sidebar collapsible="icon">
@@ -123,7 +125,7 @@ export function DashboardSidebar() {
         <div className="p-2">
           {!collapsed && user && (
             <div className="mb-2 px-2">
-              <p className="text-sm font-medium truncate">{user.name}</p>
+              <p className="text-sm font-medium truncate">{displayName}</p>
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
           )}

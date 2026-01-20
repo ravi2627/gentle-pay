@@ -65,16 +65,18 @@ const TIMEZONES = [
 ];
 
 const Settings = () => {
-  const { user, logout } = useAuth();
+  const { user, profile: userProfile, signOut } = useAuth();
   const { toast } = useToast();
+
+  const displayName = userProfile?.business_name || user?.email?.split("@")[0] || "User";
 
   const [isSaving, setIsSaving] = useState(false);
 
   // Profile settings
   const [profile, setProfile] = useState({
-    name: user?.name || "",
+    name: displayName,
     email: user?.email || "",
-    company: "",
+    company: userProfile?.business_name || "",
     timezone: "UTC",
     currency: "USD",
     emailSenderName: "",
@@ -108,11 +110,12 @@ const Settings = () => {
     if (user) {
       setProfile((prev) => ({
         ...prev,
-        name: user.name || "",
+        name: displayName,
         email: user.email || "",
+        company: userProfile?.business_name || "",
       }));
     }
-  }, [user]);
+  }, [user, userProfile, displayName]);
 
   const handleSaveProfile = () => {
     const name = profile.name.trim();
