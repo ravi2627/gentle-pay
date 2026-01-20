@@ -50,6 +50,62 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_reminders: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          invoice_id: string
+          scheduled_for: string | null
+          sent_at: string | null
+          sort_order: number
+          status: string
+          timing_days: number
+          timing_type: string
+          tone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          invoice_id: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          sort_order?: number
+          status?: string
+          timing_days?: number
+          timing_type: string
+          tone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          sort_order?: number
+          status?: string
+          timing_days?: number
+          timing_type?: string
+          tone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_reminders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount: number

@@ -38,6 +38,7 @@ import { useInvoices, InvoiceWithClient } from "@/hooks/useInvoices";
 import { useClients } from "@/hooks/useClients";
 import { useReminders } from "@/hooks/useReminders";
 import { usePaymentLinks } from "@/hooks/usePaymentLinks";
+import { useInvoiceReminders } from "@/hooks/useInvoiceReminders";
 import { CreateInvoiceForm, CreateInvoiceFormData } from "@/components/dashboard/CreateInvoiceForm";
 import { PaymentLinksManager, PaymentLinkWithStats } from "@/components/dashboard/PaymentLinksManager";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -251,6 +252,9 @@ const Dashboard = () => {
       // Generate invoice number
       const invoiceNumber = `INV-${String(dbInvoices.length + 1).padStart(3, "0")}`;
       
+      // Determine reminder settings from the new flexible system
+      const hasReminders = data.reminders.length > 0;
+      
       createInvoice.mutate({
         invoice_number: invoiceNumber,
         amount: amount,
@@ -259,16 +263,35 @@ const Dashboard = () => {
         client_email: data.clientEmail,
         payment_link_id: data.paymentLinkId || undefined,
         currency: currency,
-        reminder_enabled: data.reminderSchedule.enabled,
-        reminder_tone: data.reminderSchedule.tone,
-        email_3_days_before: data.reminderSchedule.email3DaysBefore,
-        email_on_due_date: data.reminderSchedule.emailOnDueDate,
-        email_3_days_after: data.reminderSchedule.email3DaysAfter,
-        email_7_days_after: data.reminderSchedule.email7DaysAfter,
-        sms_enabled: data.reminderSchedule.smsEnabled,
-        sms_days_after_due: data.reminderSchedule.smsDaysAfterDue,
+        reminder_enabled: hasReminders,
+        // Use the first reminder's tone as the default tone for legacy compatibility
+        reminder_tone: data.reminders[0]?.tone || "polite",
       }, {
-        onSuccess: () => {
+        onSuccess: (newInvoice) => {
+          // Create the flexible reminders in the new invoice_reminders table
+          if (hasReminders && newInvoice?.id) {
+            // Use the invoiceReminders hook to create reminders
+            const reminderInserts = data.reminders.map((r, idx) => ({
+              invoice_id: newInvoice.id,
+              timing_type: r.timing_type,
+              timing_days: r.timing_days,
+              channel: r.channel,
+              tone: r.tone,
+              sort_order: idx,
+            }));
+            
+            // We'll create reminders via direct supabase call since we're in a callback
+            import("@/integrations/supabase/client").then(({ supabase }) => {
+              supabase.auth.getUser().then(({ data: { user } }) => {
+                if (user) {
+                  supabase.from("invoice_reminders").insert(
+                    reminderInserts.map((r) => ({ ...r, user_id: user.id }))
+                  );
+                }
+              });
+            });
+          }
+          
           setIsSubmitting(false);
           setIsDialogOpen(false);
           resetForm();
