@@ -27,6 +27,8 @@ import { KPICards } from "@/components/dashboard/KPICards";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 import { SMSUsageCard } from "@/components/dashboard/SMSUsageCard";
 import { TeamManagement } from "@/components/dashboard/TeamManagement";
+import { MobileInvoiceList } from "@/components/dashboard/MobileInvoiceList";
+import { FloatingActionButton } from "@/components/FloatingActionButton";
 import {
   CreditCard,
   Mail,
@@ -384,11 +386,38 @@ const Dashboard = () => {
     }
   };
 
+  const handleMarkPaid = (invoiceId: string) => {
+    setInvoices(
+      invoices.map((inv) =>
+        inv.id === invoiceId ? { ...inv, status: "paid" as const } : inv
+      )
+    );
+    toast({
+      title: "Invoice marked as paid!",
+      description: `Invoice ${invoiceId} has been updated.`,
+    });
+  };
+
+  const handleSendSingleReminder = (invoiceId: string) => {
+    setInvoices(
+      invoices.map((inv) =>
+        inv.id === invoiceId ? { ...inv, reminders: inv.reminders + 1 } : inv
+      )
+    );
+    toast({
+      title: "Reminder sent!",
+      description: `Payment reminder sent for invoice ${invoiceId}.`,
+    });
+  };
+
   return (
     <DashboardLayout
       title={`Welcome back, ${user?.name || "User"}! 👋`}
       description="Here's what's happening with your invoices today."
     >
+      {/* Floating Action Button - Mobile only */}
+      <FloatingActionButton onClick={() => setIsDialogOpen(true)} label="New Invoice" />
+
       {/* KPI Cards */}
       <KPICards 
         invoices={invoices} 
@@ -396,8 +425,8 @@ const Dashboard = () => {
         currencySymbol={currencySymbol} 
       />
 
-      {/* Actions */}
-      <div className="flex flex-wrap gap-3 mt-8 mb-6">
+      {/* Actions - Hidden on mobile (using FAB instead) */}
+      <div className="hidden md:flex flex-wrap gap-3 mt-8 mb-6">
         <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           New Invoice
@@ -412,13 +441,35 @@ const Dashboard = () => {
         </Button>
       </div>
 
+      {/* Mobile Quick Actions */}
+      <div className="flex gap-2 mt-6 mb-4 md:hidden overflow-x-auto scrollbar-hide -mx-4 px-4">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex-shrink-0 h-10"
+          onClick={() => setIsReminderDialogOpen(true)}
+        >
+          <Mail className="w-4 h-4 mr-2" />
+          Send Reminder
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex-shrink-0 h-10"
+          onClick={() => setIsPaymentLinksDialogOpen(true)}
+        >
+          <CreditCard className="w-4 h-4 mr-2" />
+          Payment Links
+        </Button>
+      </div>
+
       {/* Tabs for Dashboard Views */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="invoices">Invoices</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="team">Team</TabsTrigger>
+      <Tabs defaultValue="overview" className="space-y-4 md:space-y-6 mt-4 md:mt-0">
+        <TabsList className="w-full md:w-auto overflow-x-auto scrollbar-hide">
+          <TabsTrigger value="overview" className="flex-1 md:flex-none">Overview</TabsTrigger>
+          <TabsTrigger value="invoices" className="flex-1 md:flex-none">Invoices</TabsTrigger>
+          <TabsTrigger value="analytics" className="flex-1 md:flex-none">Analytics</TabsTrigger>
+          <TabsTrigger value="team" className="flex-1 md:flex-none">Team</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -466,7 +517,20 @@ const Dashboard = () => {
 
         {/* Invoices Tab */}
         <TabsContent value="invoices">
-          <Card>
+          {/* Mobile: Card-based list */}
+          <div className="md:hidden">
+            <MobileInvoiceList
+              invoices={invoices}
+              currencySymbol={currencySymbol}
+              onEdit={openEditDialog}
+              onDelete={openDeleteDialog}
+              onMarkPaid={handleMarkPaid}
+              onSendReminder={handleSendSingleReminder}
+            />
+          </div>
+
+          {/* Desktop: Table layout */}
+          <Card className="hidden md:block">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>All Invoices</span>

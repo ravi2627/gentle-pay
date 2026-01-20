@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, TrendingUp, AlertTriangle, Users, Send, Clock } from "lucide-react";
+import { DollarSign, TrendingUp, AlertTriangle, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Invoice {
@@ -40,79 +40,79 @@ export const KPICards = ({ invoices, currency, currencySymbol }: KPICardsProps) 
     invoices.filter((inv) => inv.status !== "paid").map((inv) => inv.client)
   ).size;
 
-  const totalReminders = invoices.reduce((sum, inv) => sum + inv.reminders, 0);
-
   const pendingCount = invoices.filter((inv) => inv.status === "pending").length;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
       {/* Total Outstanding */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Total Outstanding
+      <Card className="touch-target">
+        <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 space-y-0">
+          <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+            Outstanding
           </CardTitle>
-          <DollarSign className="w-4 h-4 text-muted-foreground" />
+          <DollarSign className="w-4 h-4 text-muted-foreground hidden sm:block" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
+        <CardContent className="pt-0">
+          <div className="text-xl md:text-2xl font-bold truncate">
             {currencySymbol}{totalOutstanding.toLocaleString()}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {pendingCount + overdueCount} unpaid invoices
+          <p className="text-[10px] md:text-xs text-muted-foreground">
+            {pendingCount + overdueCount} unpaid
           </p>
         </CardContent>
       </Card>
 
       {/* Overdue Invoices */}
-      <Card className={overdueCount > 0 ? "border-destructive/50" : ""}>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Overdue Invoices
+      <Card className={`touch-target ${overdueCount > 0 ? "border-destructive/50" : ""}`}>
+        <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 space-y-0">
+          <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+            Overdue
           </CardTitle>
-          <AlertTriangle className={`w-4 h-4 ${overdueCount > 0 ? "text-destructive" : "text-muted-foreground"}`} />
+          <AlertTriangle className={`w-4 h-4 hidden sm:block ${overdueCount > 0 ? "text-destructive" : "text-muted-foreground"}`} />
         </CardHeader>
-        <CardContent>
-          <div className={`text-2xl font-bold ${overdueCount > 0 ? "text-destructive" : ""}`}>
+        <CardContent className="pt-0">
+          <div className={`text-xl md:text-2xl font-bold ${overdueCount > 0 ? "text-destructive" : ""}`}>
             {overdueCount}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {currencySymbol}{overdueAmount.toLocaleString()} overdue
+          <p className="text-[10px] md:text-xs text-muted-foreground truncate">
+            {currencySymbol}{overdueAmount.toLocaleString()}
           </p>
         </CardContent>
       </Card>
 
       {/* Paid This Month */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Paid This Month
+      <Card className="touch-target">
+        <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 space-y-0">
+          <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+            Collected
           </CardTitle>
-          <TrendingUp className="w-4 h-4 text-success" />
+          <TrendingUp className="w-4 h-4 text-success hidden sm:block" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-success">
+        <CardContent className="pt-0">
+          <div className="text-xl md:text-2xl font-bold text-success truncate">
             {currencySymbol}{paidThisMonth.toLocaleString()}
           </div>
-          <p className="text-xs text-success">+23% from last month</p>
+          <p className="text-[10px] md:text-xs text-success">
+            +23% vs last month
+          </p>
         </CardContent>
       </Card>
 
       {/* Active Clients */}
       <Card 
-        className="cursor-pointer hover:bg-muted/30 transition-colors" 
+        className="touch-target cursor-pointer hover:bg-muted/30 active:scale-[0.98] transition-all" 
         onClick={() => navigate("/clients")}
       >
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Active Clients
+        <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 space-y-0">
+          <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+            Clients
           </CardTitle>
-          <Users className="w-4 h-4 text-muted-foreground" />
+          <Users className="w-4 h-4 text-muted-foreground hidden sm:block" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{activeClients}</div>
-          <p className="text-xs text-muted-foreground">
-            {clientsWithPending} with pending invoices
+        <CardContent className="pt-0">
+          <div className="text-xl md:text-2xl font-bold">{activeClients}</div>
+          <p className="text-[10px] md:text-xs text-muted-foreground">
+            {clientsWithPending} pending
           </p>
         </CardContent>
       </Card>
