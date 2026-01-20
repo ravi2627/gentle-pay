@@ -817,6 +817,7 @@ const Dashboard = () => {
           <CreateInvoiceForm
             paymentLinks={dbPaymentLinks.map((link) => ({
               id: link.id,
+              label: link.label,
               url: link.url,
               isDefault: link.is_default,
             }))}
@@ -1003,6 +1004,7 @@ const Dashboard = () => {
           <PaymentLinksManager
             paymentLinks={dbPaymentLinks.map((link) => ({
               id: link.id,
+              label: link.label,
               url: link.url,
               isDefault: link.is_default,
               isActive: link.is_active,
@@ -1010,8 +1012,8 @@ const Dashboard = () => {
               createdAt: link.created_at,
             }))}
             isLoading={paymentLinksLoading}
-            onCreateLink={async (url) => {
-              await createPaymentLinkMutation.mutateAsync({ url });
+            onCreateLink={async (label, url) => {
+              await createPaymentLinkMutation.mutateAsync({ label, url });
             }}
             onDeleteLink={async (id) => {
               await deletePaymentLinkMutation.mutateAsync(id);

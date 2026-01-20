@@ -142,9 +142,9 @@ export type Database = {
           created_at: string
           expires_at: string | null
           id: string
-          invoice_id: string
           is_active: boolean
           is_default: boolean
+          label: string
           short_code: string | null
           url: string
           user_id: string
@@ -153,9 +153,9 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
-          invoice_id: string
           is_active?: boolean
           is_default?: boolean
+          label?: string
           short_code?: string | null
           url: string
           user_id: string
@@ -164,22 +164,14 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
-          invoice_id?: string
           is_active?: boolean
           is_default?: boolean
+          label?: string
           short_code?: string | null
           url?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "payment_links_invoice_id_fkey"
-            columns: ["invoice_id"]
-            isOneToOne: false
-            referencedRelation: "invoices"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
