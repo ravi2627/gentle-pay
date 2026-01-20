@@ -129,16 +129,44 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Email tracking hook
+  // Supabase data hooks
+  const { 
+    invoices: dbInvoices, 
+    isLoading: invoicesLoading, 
+    createInvoice, 
+    updateInvoice, 
+    deleteInvoice, 
+    markAsPaid,
+    stats: invoiceStats 
+  } = useInvoices();
+  const { clients, isLoading: clientsLoading } = useClients();
+  const { reminders, stats: reminderStats, sendReminder: sendDbReminder } = useReminders();
+
+  // Email tracking hook (for legacy compatibility)
   const { stats: emailStats, getInvoiceEmailStatus, getInvoiceLogs, sendReminder, shouldEscalateToSMS } = useEmailTracking();
 
-  // User preferences (simulated)
-  const [currency, setCurrency] = useState("USD");
+  // User preferences
+  const [currency, setCurrency] = useState("INR");
   const [plan] = useState<"free" | "pro" | "agency">("pro");
 
-  const currencySymbol = CURRENCIES.find((c) => c.code === currency)?.symbol || "$";
+  const currencySymbol = CURRENCIES.find((c) => c.code === currency)?.symbol || "₹";
 
-  const [invoices, setInvoices] = useState<LocalInvoice[]>([]);
+  // Transform DB invoices to local format for UI compatibility
+  const invoices: LocalInvoice[] = useMemo(() => {
+    return dbInvoices.map((inv) => ({
+      id: inv.id,
+      client: inv.client_name || "Unknown Client",
+      amount: Number(inv.amount),
+      status: (inv.status === "sent" || inv.status === "viewed" ? "pending" : inv.status) as "paid" | "pending" | "overdue",
+      dueDate: new Date(inv.due_date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+      reminders: inv.reminders_count,
+    }));
+  }, [dbInvoices]);
+
   const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>(initialPaymentLinks);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -151,11 +179,13 @@ const Dashboard = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<LocalInvoice | null>(null);
+  const [selectedDbInvoiceId, setSelectedDbInvoiceId] = useState<string | null>(null);
   const [reminderMessage, setReminderMessage] = useState(
     "Hi {client},\n\nThis is a friendly reminder that invoice {invoice_id} for {currency}{amount} is due on {due_date}.\n\nPlease let us know if you have any questions.\n\nBest regards"
   );
   const [formData, setFormData] = useState({
     client: "",
+    clientId: "",
     amount: "",
     dueDate: "",
     status: "pending" as "paid" | "pending" | "overdue",
@@ -175,13 +205,14 @@ const Dashboard = () => {
   const resetForm = () => {
     setFormData({
       client: "",
+      clientId: "",
       amount: "",
       dueDate: "",
       status: "pending",
     });
   };
 
-  const handleCreateInvoice = (e: React.FormEvent) => {
+  const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const clientName = formData.client.trim();
@@ -215,47 +246,33 @@ const Dashboard = () => {
     }
 
     setIsSubmitting(true);
-
-    setTimeout(() => {
-      const newInvoice: LocalInvoice = {
-        id: `INV-${String(invoices.length + 1).padStart(3, "0")}`,
-        client: clientName,
-        amount: amount,
-        status: formData.status,
-        dueDate: new Date(formData.dueDate).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-        reminders: 0,
-      };
-
-      setInvoices([newInvoice, ...invoices]);
-      setIsSubmitting(false);
-      setIsDialogOpen(false);
-      resetForm();
-
-      toast({
-        title: "Invoice created!",
-        description: `Invoice ${newInvoice.id} for ${newInvoice.client} has been created.`,
-      });
-    }, 500);
+    
+    // Generate invoice number
+    const invoiceNumber = `INV-${String(dbInvoices.length + 1).padStart(3, "0")}`;
+    
+    createInvoice.mutate({
+      invoice_number: invoiceNumber,
+      amount: amount,
+      due_date: formData.dueDate,
+      status: formData.status === "overdue" ? "overdue" : "pending",
+      client_id: formData.clientId || undefined,
+      currency: currency,
+    }, {
+      onSuccess: () => {
+        setIsSubmitting(false);
+        setIsDialogOpen(false);
+        resetForm();
+      },
+      onError: () => {
+        setIsSubmitting(false);
+      }
+    });
   };
 
-  const handleEditInvoice = () => {
-    if (!selectedInvoice) return;
+  const handleEditInvoice = async () => {
+    if (!selectedInvoice || !selectedDbInvoiceId) return;
 
-    const clientName = editFormData.client.trim();
     const amount = parseFloat(editFormData.amount);
-
-    if (!clientName || clientName.length > 100) {
-      toast({
-        title: "Invalid client name",
-        description: "Please enter a valid client name (max 100 characters).",
-        variant: "destructive",
-      });
-      return;
-    }
 
     if (isNaN(amount) || amount <= 0 || amount > 10000000) {
       toast({
@@ -277,54 +294,42 @@ const Dashboard = () => {
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setInvoices(
-        invoices.map((inv) =>
-          inv.id === selectedInvoice.id
-            ? {
-                ...inv,
-                client: clientName,
-                amount: amount,
-                status: editFormData.status,
-                dueDate: new Date(editFormData.dueDate).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                }),
-              }
-            : inv
-        )
-      );
-
-      setIsSubmitting(false);
-      setIsEditDialogOpen(false);
-      setSelectedInvoice(null);
-
-      toast({
-        title: "Invoice updated!",
-        description: `Invoice ${selectedInvoice.id} has been updated.`,
-      });
-    }, 500);
+    updateInvoice.mutate({
+      id: selectedDbInvoiceId,
+      amount: amount,
+      due_date: editFormData.dueDate,
+      status: editFormData.status === "overdue" ? "overdue" : editFormData.status === "paid" ? "paid" : "pending",
+    }, {
+      onSuccess: () => {
+        setIsSubmitting(false);
+        setIsEditDialogOpen(false);
+        setSelectedInvoice(null);
+        setSelectedDbInvoiceId(null);
+      },
+      onError: () => {
+        setIsSubmitting(false);
+      }
+    });
   };
 
   const handleDeleteInvoice = () => {
-    if (!selectedInvoice) return;
+    if (!selectedInvoice || !selectedDbInvoiceId) return;
 
-    setInvoices(invoices.filter((inv) => inv.id !== selectedInvoice.id));
-    setIsDeleteDialogOpen(false);
-
-    toast({
-      title: "Invoice deleted",
-      description: `Invoice ${selectedInvoice.id} has been removed.`,
+    deleteInvoice.mutate(selectedDbInvoiceId, {
+      onSuccess: () => {
+        setIsDeleteDialogOpen(false);
+        setSelectedInvoice(null);
+        setSelectedDbInvoiceId(null);
+      }
     });
-
-    setSelectedInvoice(null);
   };
 
   const openEditDialog = (invoice: LocalInvoice) => {
     setSelectedInvoice(invoice);
-    const parsedDate = new Date(invoice.dueDate);
-    const formattedDate = parsedDate.toISOString().split("T")[0];
+    setSelectedDbInvoiceId(invoice.id);
+    // Find the DB invoice to get the correct date format
+    const dbInv = dbInvoices.find(i => i.id === invoice.id);
+    const formattedDate = dbInv ? dbInv.due_date : new Date().toISOString().split("T")[0];
     setEditFormData({
       client: invoice.client,
       amount: String(invoice.amount),
@@ -336,6 +341,7 @@ const Dashboard = () => {
 
   const openDeleteDialog = (invoice: LocalInvoice) => {
     setSelectedInvoice(invoice);
+    setSelectedDbInvoiceId(invoice.id);
     setIsDeleteDialogOpen(true);
   };
 
@@ -368,36 +374,19 @@ const Dashboard = () => {
   };
 
   const handleMarkPaid = (invoiceId: string) => {
-    setInvoices(
-      invoices.map((inv) =>
-        inv.id === invoiceId ? { ...inv, status: "paid" as const } : inv
-      )
-    );
-    toast({
-      title: "Invoice marked as paid!",
-      description: `Invoice ${invoiceId} has been updated.`,
-    });
+    markAsPaid.mutate(invoiceId);
   };
 
   const handleSendSingleReminder = (invoiceId: string) => {
     const invoice = invoices.find((inv) => inv.id === invoiceId);
     if (!invoice) return;
 
-    // Use email tracking hook to send reminder
-    const result = sendReminder(invoiceId, `client-${invoiceId}`, "email", "polite");
-    
-    setInvoices(
-      invoices.map((inv) =>
-        inv.id === invoiceId ? { ...inv, reminders: inv.reminders + 1 } : inv
-      )
-    );
-    
-    toast({
-      title: result.deliveryStatus === "sent" ? "Reminder sent!" : "Reminder failed",
-      description: result.deliveryStatus === "sent" 
-        ? `Email reminder sent to ${invoice.client}. We'll track when they open it.`
-        : `Failed to send reminder to ${invoice.client}. Please try again.`,
-      variant: result.deliveryStatus === "sent" ? "default" : "destructive",
+    // Send reminder via Supabase
+    const dbInv = dbInvoices.find(i => i.id === invoiceId);
+    sendDbReminder.mutate({
+      invoice_id: invoiceId,
+      type: "email",
+      recipient_email: dbInv?.client_email || undefined,
     });
   };
 
@@ -940,15 +929,17 @@ const Dashboard = () => {
 
                 setIsSubmitting(true);
 
-                setTimeout(() => {
-                  setInvoices(
-                    invoices.map((inv) =>
-                      selectedInvoices.includes(inv.id)
-                        ? { ...inv, reminders: inv.reminders + 1 }
-                        : inv
-                    )
-                  );
-
+                // Send reminders for each selected invoice
+                Promise.all(
+                  selectedInvoices.map((invoiceId) => {
+                    const dbInv = dbInvoices.find(i => i.id === invoiceId);
+                    return sendDbReminder.mutateAsync({
+                      invoice_id: invoiceId,
+                      type: "email",
+                      recipient_email: dbInv?.client_email || undefined,
+                    }).catch(() => {}); // Silently catch individual errors
+                  })
+                ).then(() => {
                   setIsSubmitting(false);
                   setIsReminderDialogOpen(false);
                   setSelectedInvoices([]);
@@ -957,7 +948,9 @@ const Dashboard = () => {
                     title: "Reminders sent!",
                     description: `Payment reminders sent to ${selectedInvoices.length} client(s).`,
                   });
-                }, 800);
+                }).catch(() => {
+                  setIsSubmitting(false);
+                });
               }}
               disabled={isSubmitting || selectedInvoices.length === 0}
             >
