@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,6 +8,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,13 +19,42 @@ const Header = () => {
   }, []);
 
   const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/pricing", label: "Pricing" },
-    { href: "/how-it-works", label: "How it Works" },
-    { href: "/faq", label: "FAQ" },
+    { href: "/", label: "Home", anchor: null },
+    { href: "/#pricing", label: "Pricing", anchor: "pricing" },
+    { href: "/#how-it-works", label: "How it Works", anchor: "how-it-works" },
+    { href: "/#faq", label: "FAQ", anchor: "faq" },
   ];
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path === "/") return location.pathname === "/" && !location.hash;
+    return location.hash === `#${path.split("#")[1]}`;
+  };
+
+  const handleNavClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, link: { href: string; anchor: string | null }) => {
+    if (link.anchor) {
+      e.preventDefault();
+      
+      // If we're on the homepage, scroll to the section
+      if (location.pathname === "/") {
+        const element = document.getElementById(link.anchor);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth" });
+          window.history.pushState(null, "", `#${link.anchor}`);
+        }
+      } else {
+        // Navigate to homepage then scroll
+        navigate("/");
+        setTimeout(() => {
+          const element = document.getElementById(link.anchor!);
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth" });
+            window.history.pushState(null, "", `#${link.anchor}`);
+          }
+        }, 100);
+      }
+    }
+    setIsMenuOpen(false);
+  }, [location.pathname, navigate]);
 
   return (
     <motion.header 
@@ -51,17 +81,18 @@ const Header = () => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-1">
           {navLinks.map((link) => (
-            <Link
+            <a
               key={link.href}
-              to={link.href}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              href={link.href}
+              onClick={(e) => handleNavClick(e, link)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                 isActive(link.href)
                   ? "text-primary bg-primary/10"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
               {link.label}
-            </Link>
+            </a>
           ))}
         </nav>
 
@@ -105,27 +136,27 @@ const Header = () => {
           >
             <nav className="container py-6 flex flex-col space-y-2">
               {navLinks.map((link) => (
-                <Link
+                <a
                   key={link.href}
-                  to={link.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  href={link.href}
+                  onClick={(e) => handleNavClick(e, link)}
+                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-all min-h-[48px] flex items-center ${
                     isActive(link.href)
                       ? "text-primary bg-primary/10"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                 >
                   {link.label}
-                </Link>
+                </a>
               ))}
               <div className="flex flex-col space-y-2 pt-4 mt-4 border-t border-border/50">
                 <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">
+                  <Button variant="ghost" className="w-full justify-start min-h-[48px]">
                     Log in
                   </Button>
                 </Link>
                 <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
-                  <Button className="w-full bg-gradient-to-r from-primary to-accent-foreground">
+                  <Button className="w-full bg-gradient-to-r from-primary to-accent-foreground min-h-[48px]">
                     Start Free
                   </Button>
                 </Link>

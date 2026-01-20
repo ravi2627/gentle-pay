@@ -27,7 +27,7 @@ const problems = [
 
 const ProblemSection = () => {
   return (
-    <section className="py-20 md:py-28 relative overflow-hidden">
+    <section id="problem" className="py-20 md:py-28 relative overflow-hidden scroll-mt-20">
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background via-muted/30 to-background" />
       
       <div className="container">
