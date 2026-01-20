@@ -8,90 +8,65 @@ import { motion } from "framer-motion";
 
 const faqs = [
   {
-    question: "What payment methods does PayPing support?",
+    question: "How does PayPing work?",
     answer:
-      "PayPing doesn't process payments directly. Instead, you provide your own payment link (Stripe, PayPal, bank transfer, etc.) and we include it in every reminder. This means you keep full control of your payment setup.",
-  },
-  {
-    question: "How do automated reminders work?",
-    answer:
-      "You set a schedule (e.g., 3 days before due, on due date, 3 days after). PayPing automatically sends friendly reminder emails or SMS to your clients at those times, including your payment link.",
+      "Add your invoices, set up automated reminder schedules, and PayPing sends professional email and SMS reminders to your clients until they pay.",
   },
   {
     question: "Can I customize the reminder messages?",
     answer:
-      "Yes! You can edit the email templates to match your brand and tone. Our default templates are friendly and professional, designed to maintain good client relationships.",
+      "Yes, you can customize email and SMS templates to match your brand voice and communication style.",
   },
   {
-    question: "What if my client has already paid?",
+    question: "What payment methods do clients see?",
     answer:
-      "You can mark invoices as paid anytime, which stops all future reminders. We also provide a link in each reminder for clients to confirm payment, helping you track who has paid.",
+      "Each reminder includes a payment link. You connect your preferred payment processor so clients can pay instantly.",
   },
   {
-    question: "Is there a contract or commitment?",
+    question: "Is there a free plan?",
     answer:
-      "No contracts. You can cancel anytime. The Free plan is free forever, and paid plans are billed monthly with no long-term commitment required.",
+      "Yes! Our free plan includes manual reminders and up to 5 invoices. No credit card required to start.",
   },
   {
-    question: "How many SMS reminders are included?",
+    question: "How do I get started?",
     answer:
-      "The Pro plan includes 150 SMS per month, and the Agency plan includes 500. Additional SMS can be purchased in top-up packs if needed.",
-  },
-  {
-    question: "Can I use PayPing with my existing invoicing software?",
-    answer:
-      "Absolutely. PayPing is designed to complement your existing tools, not replace them. Just enter the invoice details and payment link—we handle the follow-ups.",
-  },
-  {
-    question: "Is my data secure?",
-    answer:
-      "Yes. We use industry-standard encryption and security practices. We never store payment information or process transactions directly. Your client contact information is handled securely.",
+      "Sign up for free, add your first invoice, and set up your reminder schedule. It takes less than 5 minutes.",
   },
 ];
 
 const FAQSection = () => {
   return (
-    <section className="py-24 lg:py-32 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background via-muted/20 to-background" />
-      
-      <div className="container">
+    <section className="py-16 md:py-24 bg-muted/30">
+      <div className="container max-w-3xl">
         <motion.div 
-          className="text-center mb-16"
+          className="text-center mb-10 md:mb-12"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
         >
-          <span className="inline-block px-4 py-2 rounded-full bg-muted text-muted-foreground text-sm font-medium mb-6">
-            FAQ
-          </span>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground tracking-tight">
             Frequently asked questions
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Everything you need to know about PayPing
-          </p>
         </motion.div>
 
-        <motion.div 
-          className="max-w-3xl mx-auto"
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ delay: 0.2, duration: 0.6 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <Accordion type="single" collapsible className="space-y-4">
+          <Accordion type="single" collapsible className="space-y-3">
             {faqs.map((faq, index) => (
               <AccordionItem
                 key={index}
                 value={`item-${index}`}
-                className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl px-6 overflow-hidden hover:border-border transition-colors"
+                className="bg-card border border-border/50 rounded-xl px-5 md:px-6 data-[state=open]:shadow-sm transition-shadow"
               >
-                <AccordionTrigger className="text-left font-semibold hover:no-underline py-6 text-foreground">
+                <AccordionTrigger className="text-left text-sm md:text-base font-medium text-foreground hover:no-underline py-4 md:py-5 min-h-[56px]">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground pb-6 leading-relaxed">
+                <AccordionContent className="text-muted-foreground text-sm pb-4 md:pb-5 leading-relaxed">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
