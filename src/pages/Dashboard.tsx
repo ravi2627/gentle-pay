@@ -36,6 +36,10 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  Copy,
+  Link,
+  ExternalLink,
+  Trash2,
 } from "lucide-react";
 
 interface Invoice {
@@ -46,6 +50,31 @@ interface Invoice {
   dueDate: string;
   reminders: number;
 }
+
+interface PaymentLink {
+  id: string;
+  name: string;
+  url: string;
+  description: string;
+  createdAt: string;
+}
+
+const initialPaymentLinks: PaymentLink[] = [
+  {
+    id: "PL-001",
+    name: "Stripe Invoice Link",
+    url: "https://invoice.stripe.com/i/acct_1234",
+    description: "Main payment link for invoices",
+    createdAt: "Jan 10, 2026",
+  },
+  {
+    id: "PL-002",
+    name: "PayPal.me Link",
+    url: "https://paypal.me/yourname",
+    description: "Alternative PayPal payment option",
+    createdAt: "Jan 5, 2026",
+  },
+];
 
 const initialInvoices: Invoice[] = [
   {
@@ -88,8 +117,11 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+  const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>(initialPaymentLinks);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
+  const [isPaymentLinksDialogOpen, setIsPaymentLinksDialogOpen] = useState(false);
+  const [isAddingLink, setIsAddingLink] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [reminderMessage, setReminderMessage] = useState(
@@ -100,6 +132,11 @@ const Dashboard = () => {
     amount: "",
     dueDate: "",
     status: "pending" as "paid" | "pending" | "overdue",
+  });
+  const [linkFormData, setLinkFormData] = useState({
+    name: "",
+    url: "",
+    description: "",
   });
 
   useEffect(() => {
@@ -340,7 +377,7 @@ const Dashboard = () => {
             <Mail className="w-4 h-4 mr-2" />
             Send Reminder
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setIsPaymentLinksDialogOpen(true)}>
             <CreditCard className="w-4 h-4 mr-2" />
             Payment Links
           </Button>
@@ -670,6 +707,226 @@ const Dashboard = () => {
                   Send {selectedInvoices.length > 0 ? `(${selectedInvoices.length})` : ""}
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Links Dialog */}
+      <Dialog open={isPaymentLinksDialogOpen} onOpenChange={setIsPaymentLinksDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Payment Links</DialogTitle>
+            <DialogDescription>
+              Manage your payment links to include in reminders.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Existing Payment Links */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Your Payment Links</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsAddingLink(!isAddingLink)}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add New
+                </Button>
+              </div>
+
+              {/* Add New Link Form */}
+              {isAddingLink && (
+                <div className="p-4 border border-border rounded-lg bg-muted/30 space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="linkName">Link Name</Label>
+                    <Input
+                      id="linkName"
+                      placeholder="e.g., Stripe Invoice Link"
+                      value={linkFormData.name}
+                      onChange={(e) =>
+                        setLinkFormData({ ...linkFormData, name: e.target.value })
+                      }
+                      maxLength={50}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="linkUrl">Payment URL</Label>
+                    <Input
+                      id="linkUrl"
+                      type="url"
+                      placeholder="https://..."
+                      value={linkFormData.url}
+                      onChange={(e) =>
+                        setLinkFormData({ ...linkFormData, url: e.target.value })
+                      }
+                      maxLength={500}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="linkDescription">Description (optional)</Label>
+                    <Input
+                      id="linkDescription"
+                      placeholder="Brief description..."
+                      value={linkFormData.description}
+                      onChange={(e) =>
+                        setLinkFormData({ ...linkFormData, description: e.target.value })
+                      }
+                      maxLength={100}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const name = linkFormData.name.trim();
+                        const url = linkFormData.url.trim();
+
+                        if (!name || name.length > 50) {
+                          toast({
+                            title: "Invalid name",
+                            description: "Please enter a valid link name.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        try {
+                          new URL(url);
+                        } catch {
+                          toast({
+                            title: "Invalid URL",
+                            description: "Please enter a valid payment URL.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        const newLink: PaymentLink = {
+                          id: `PL-${String(paymentLinks.length + 1).padStart(3, "0")}`,
+                          name,
+                          url,
+                          description: linkFormData.description.trim(),
+                          createdAt: new Date().toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          }),
+                        };
+
+                        setPaymentLinks([newLink, ...paymentLinks]);
+                        setLinkFormData({ name: "", url: "", description: "" });
+                        setIsAddingLink(false);
+
+                        toast({
+                          title: "Payment link added!",
+                          description: `${name} has been saved.`,
+                        });
+                      }}
+                    >
+                      Save Link
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsAddingLink(false);
+                        setLinkFormData({ name: "", url: "", description: "" });
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Links List */}
+              <div className="border border-border rounded-lg divide-y divide-border">
+                {paymentLinks.length === 0 ? (
+                  <p className="p-4 text-sm text-muted-foreground text-center">
+                    No payment links added yet
+                  </p>
+                ) : (
+                  paymentLinks.map((link) => (
+                    <div
+                      key={link.id}
+                      className="p-3 flex items-start gap-3 hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Link className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{link.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {link.url}
+                        </p>
+                        {link.description && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {link.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            navigator.clipboard.writeText(link.url);
+                            toast({
+                              title: "Copied!",
+                              description: "Payment link copied to clipboard.",
+                            });
+                          }}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => window.open(link.url, "_blank")}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => {
+                            setPaymentLinks(paymentLinks.filter((l) => l.id !== link.id));
+                            toast({
+                              title: "Link removed",
+                              description: `${link.name} has been deleted.`,
+                            });
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Info Note */}
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                <strong>Tip:</strong> Add your Stripe, PayPal, or other payment links here.
+                They'll be included in your payment reminders to clients.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsPaymentLinksDialogOpen(false)}
+            >
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>
