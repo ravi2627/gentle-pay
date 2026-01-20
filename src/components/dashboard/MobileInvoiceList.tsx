@@ -98,11 +98,17 @@ export function MobileInvoiceCard({
             <span>•</span>
             <span>Due {invoice.dueDate}</span>
           </div>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex flex-wrap items-center gap-2 mt-2">
             {emailStatus && (
               <EmailStatusIndicator emailStatus={emailStatus} size="sm" />
             )}
-            {invoice.reminders > 0 && !emailStatus && (
+            {emailStatus && emailStatus.totalEmailsSent > 0 && (
+              <Badge variant="outline" className="text-xs">
+                <Mail className="w-3 h-3 mr-1" />
+                {emailStatus.totalEmailsSent} sent
+              </Badge>
+            )}
+            {!emailStatus && invoice.reminders > 0 && (
               <span className="text-xs text-muted-foreground">
                 {invoice.reminders} reminder{invoice.reminders !== 1 ? "s" : ""} sent
               </span>

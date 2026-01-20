@@ -13,13 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Bell, DollarSign } from "lucide-react";
+import { Bell, DollarSign, LogOut, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -37,10 +39,20 @@ const CURRENCIES = [
 ];
 
 export function DashboardLayout({ children, title, description }: DashboardLayoutProps) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const [currency, setCurrency] = useState("USD");
   const [hasNotifications] = useState(true);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -126,6 +138,35 @@ export function DashboardLayout({ children, title, description }: DashboardLayou
                     </div>
                     <DropdownMenuItem className="justify-center text-primary">
                       View all notifications
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                {/* User Menu with Logout */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                          {getInitials(user?.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-3 py-2">
+                      <p className="font-medium text-sm">{user?.name || "User"}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate("/settings")}>
+                      <User className="w-4 h-4 mr-2" />
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
