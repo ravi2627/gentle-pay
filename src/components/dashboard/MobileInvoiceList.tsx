@@ -8,7 +8,6 @@ import {
   MoreHorizontal,
   Mail,
   Check,
-  Pause,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -17,6 +16,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmailStatusIndicator } from "./EmailStatusIndicator";
+import type { InvoiceEmailStatus } from "@/types/emailTracking";
 
 interface Invoice {
   id: string;
@@ -30,6 +31,7 @@ interface Invoice {
 interface MobileInvoiceCardProps {
   invoice: Invoice;
   currencySymbol: string;
+  emailStatus?: InvoiceEmailStatus;
   onEdit: (invoice: Invoice) => void;
   onDelete: (invoice: Invoice) => void;
   onMarkPaid: (invoiceId: string) => void;
@@ -39,6 +41,7 @@ interface MobileInvoiceCardProps {
 export function MobileInvoiceCard({
   invoice,
   currencySymbol,
+  emailStatus,
   onEdit,
   onDelete,
   onMarkPaid,
@@ -95,11 +98,16 @@ export function MobileInvoiceCard({
             <span>•</span>
             <span>Due {invoice.dueDate}</span>
           </div>
-          {invoice.reminders > 0 && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {invoice.reminders} reminder{invoice.reminders !== 1 ? "s" : ""} sent
-            </p>
-          )}
+          <div className="flex items-center gap-2 mt-2">
+            {emailStatus && (
+              <EmailStatusIndicator emailStatus={emailStatus} size="sm" />
+            )}
+            {invoice.reminders > 0 && !emailStatus && (
+              <span className="text-xs text-muted-foreground">
+                {invoice.reminders} reminder{invoice.reminders !== 1 ? "s" : ""} sent
+              </span>
+            )}
+          </div>
         </div>
         
         <DropdownMenu>
@@ -170,6 +178,7 @@ export function MobileInvoiceCard({
 interface MobileInvoiceListProps {
   invoices: Invoice[];
   currencySymbol: string;
+  getEmailStatus?: (invoiceId: string) => InvoiceEmailStatus;
   onEdit: (invoice: Invoice) => void;
   onDelete: (invoice: Invoice) => void;
   onMarkPaid: (invoiceId: string) => void;
@@ -179,6 +188,7 @@ interface MobileInvoiceListProps {
 export function MobileInvoiceList({
   invoices,
   currencySymbol,
+  getEmailStatus,
   onEdit,
   onDelete,
   onMarkPaid,
@@ -199,6 +209,7 @@ export function MobileInvoiceList({
           key={invoice.id}
           invoice={invoice}
           currencySymbol={currencySymbol}
+          emailStatus={getEmailStatus?.(invoice.id)}
           onEdit={onEdit}
           onDelete={onDelete}
           onMarkPaid={onMarkPaid}
