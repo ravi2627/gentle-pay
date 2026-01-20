@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ScrollProgressBar from "@/components/ScrollProgressBar";
+import { BackToTopButton } from "@/components/BackToTopButton";
 import Index from "./pages/Index";
 import Pricing from "./pages/Pricing";
 import HowItWorks from "./pages/HowItWorks";
@@ -24,6 +25,7 @@ const App = () => (
     <AuthProvider>
       <TooltipProvider>
         <ScrollProgressBar />
+        <BackToTopButton />
         <Toaster />
         <Sonner />
         <BrowserRouter>
