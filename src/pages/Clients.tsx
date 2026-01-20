@@ -1,6 +1,5 @@
-import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { useClients, ClientWithStats } from "@/hooks/useClients";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Building2,
   DollarSign,
@@ -31,6 +32,7 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -47,7 +49,8 @@ interface PaymentRecord {
   date: string;
 }
 
-interface Client {
+// Local UI type for compatibility
+interface LocalClient {
   id: string;
   name: string;
   email: string;
@@ -59,79 +62,41 @@ interface Client {
   createdAt: string;
 }
 
-const initialClients: Client[] = [
-  {
-    id: "CL-001",
-    name: "John Smith",
-    email: "john@acmecorp.com",
-    phone: "+1 555-0123",
-    company: "Acme Corp",
-    totalPaid: 12500,
-    totalOutstanding: 0,
-    paymentHistory: [
-      { id: "PH-001", invoiceId: "INV-001", amount: 2500, status: "paid", date: "Jan 15, 2026" },
-      { id: "PH-002", invoiceId: "INV-005", amount: 5000, status: "paid", date: "Dec 20, 2025" },
-      { id: "PH-003", invoiceId: "INV-008", amount: 5000, status: "paid", date: "Nov 15, 2025" },
-    ],
-    createdAt: "Oct 1, 2025",
-  },
-  {
-    id: "CL-002",
-    name: "Sarah Johnson",
-    email: "sarah@techstart.io",
-    phone: "+1 555-0456",
-    company: "TechStart Inc",
-    totalPaid: 8400,
-    totalOutstanding: 4200,
-    paymentHistory: [
-      { id: "PH-004", invoiceId: "INV-002", amount: 4200, status: "pending", date: "Jan 22, 2026" },
-      { id: "PH-005", invoiceId: "INV-006", amount: 4200, status: "paid", date: "Dec 10, 2025" },
-      { id: "PH-006", invoiceId: "INV-009", amount: 4200, status: "paid", date: "Nov 5, 2025" },
-    ],
-    createdAt: "Sep 15, 2025",
-  },
-  {
-    id: "CL-003",
-    name: "Mike Chen",
-    email: "mike@designstudio.co",
-    phone: "+1 555-0789",
-    company: "Design Studio",
-    totalPaid: 5400,
-    totalOutstanding: 1800,
-    paymentHistory: [
-      { id: "PH-007", invoiceId: "INV-003", amount: 1800, status: "overdue", date: "Jan 10, 2026" },
-      { id: "PH-008", invoiceId: "INV-007", amount: 1800, status: "paid", date: "Dec 5, 2025" },
-      { id: "PH-009", invoiceId: "INV-010", amount: 1800, status: "paid", date: "Nov 1, 2025" },
-      { id: "PH-010", invoiceId: "INV-012", amount: 1800, status: "paid", date: "Oct 3, 2025" },
-    ],
-    createdAt: "Aug 20, 2025",
-  },
-  {
-    id: "CL-004",
-    name: "Emma Wilson",
-    email: "emma@marketingpro.com",
-    phone: "+1 555-0321",
-    company: "Marketing Pro",
-    totalPaid: 6200,
-    totalOutstanding: 3100,
-    paymentHistory: [
-      { id: "PH-011", invoiceId: "INV-004", amount: 3100, status: "pending", date: "Jan 28, 2026" },
-      { id: "PH-012", invoiceId: "INV-011", amount: 3100, status: "paid", date: "Dec 15, 2025" },
-      { id: "PH-013", invoiceId: "INV-013", amount: 3100, status: "paid", date: "Nov 10, 2025" },
-    ],
-    createdAt: "Jul 1, 2025",
-  },
-];
-
 const Clients = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [clients, setClients] = useState<Client[]>(initialClients);
+  // Supabase data hook
+  const { 
+    clientsWithStats, 
+    isLoadingWithStats, 
+    createClient, 
+    deleteClient 
+  } = useClients();
+
+  // Transform DB clients to local format for UI compatibility
+  const clients: LocalClient[] = useMemo(() => {
+    return clientsWithStats.map((c) => ({
+      id: c.id,
+      name: c.name,
+      email: c.email || "",
+      phone: c.phone || "",
+      company: c.company || "",
+      totalPaid: c.totalPaid,
+      totalOutstanding: c.totalOutstanding,
+      paymentHistory: [], // Payment history will be fetched separately if needed
+      createdAt: new Date(c.created_at).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+    }));
+  }, [clientsWithStats]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedClient, setSelectedClient] = useState<LocalClient | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -140,7 +105,6 @@ const Clients = () => {
     phone: "",
     company: "",
   });
-
 
   const filteredClients = clients.filter(
     (client) =>
@@ -189,42 +153,25 @@ const Clients = () => {
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const newClient: Client = {
-        id: `CL-${String(clients.length + 1).padStart(3, "0")}`,
-        name,
-        email,
-        phone,
-        company,
-        totalPaid: 0,
-        totalOutstanding: 0,
-        paymentHistory: [],
-        createdAt: new Date().toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-      };
-
-      setClients([newClient, ...clients]);
-      setIsSubmitting(false);
-      setIsAddDialogOpen(false);
-      resetForm();
-
-      toast({
-        title: "Client added",
-        description: `${name} has been added to your clients.`,
-      });
-    }, 500);
+    createClient.mutate({
+      name,
+      email,
+      phone: phone || undefined,
+      company: company || undefined,
+    }, {
+      onSuccess: () => {
+        setIsSubmitting(false);
+        setIsAddDialogOpen(false);
+        resetForm();
+      },
+      onError: () => {
+        setIsSubmitting(false);
+      }
+    });
   };
 
   const handleDeleteClient = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId);
-    setClients(clients.filter((c) => c.id !== clientId));
-    toast({
-      title: "Client removed",
-      description: `${client?.name} has been removed from your clients.`,
-    });
+    deleteClient.mutate(clientId);
   };
 
   const getStatusBadge = (status: string) => {
