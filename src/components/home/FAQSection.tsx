@@ -4,6 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { motion } from "framer-motion";
 
 const faqs = [
   {
@@ -50,35 +51,53 @@ const faqs = [
 
 const FAQSection = () => {
   return (
-    <section className="py-20 bg-muted/30">
+    <section className="py-24 lg:py-32 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background via-muted/20 to-background" />
+      
       <div className="container">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+        <motion.div 
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+        >
+          <span className="inline-block px-4 py-2 rounded-full bg-muted text-muted-foreground text-sm font-medium mb-6">
+            FAQ
+          </span>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight">
             Frequently asked questions
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Everything you need to know about PayPing
           </p>
-        </div>
+        </motion.div>
 
-        <div className="max-w-3xl mx-auto">
+        <motion.div 
+          className="max-w-3xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+        >
           <Accordion type="single" collapsible className="space-y-4">
             {faqs.map((faq, index) => (
               <AccordionItem
                 key={index}
                 value={`item-${index}`}
-                className="bg-background border border-border rounded-lg px-6"
+                className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl px-6 overflow-hidden hover:border-border transition-colors"
               >
-                <AccordionTrigger className="text-left font-medium hover:no-underline">
+                <AccordionTrigger className="text-left font-semibold hover:no-underline py-6 text-foreground">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
+                <AccordionContent className="text-muted-foreground pb-6 leading-relaxed">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
