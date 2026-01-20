@@ -32,6 +32,7 @@ import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { EmailTrackingCards } from "@/components/dashboard/EmailTrackingCards";
 import { EmailStatusIndicator } from "@/components/dashboard/EmailStatusIndicator";
 import { InvoiceActivityTimeline, reminderLogsToActivities } from "@/components/dashboard/InvoiceActivityTimeline";
+import { SwipeToDelete } from "@/components/SwipeToDelete";
 import { useEmailTracking } from "@/hooks/useEmailTracking";
 import { useInvoices, InvoiceWithClient } from "@/hooks/useInvoices";
 import { useClients } from "@/hooks/useClients";
@@ -1163,74 +1164,86 @@ const Dashboard = () => {
                 </div>
               )}
 
-              <div className="border border-border rounded-lg divide-y divide-border">
+              <div className="border border-border rounded-lg divide-y divide-border overflow-hidden">
                 {paymentLinks.length === 0 ? (
                   <p className="p-4 text-sm text-muted-foreground text-center">
                     No payment links added yet
                   </p>
                 ) : (
                   paymentLinks.map((link) => (
-                    <div
+                    <SwipeToDelete
                       key={link.id}
-                      className="p-3 hover:bg-muted/30 transition-colors"
+                      onDelete={() => {
+                        setPaymentLinks(paymentLinks.filter((l) => l.id !== link.id));
+                        toast({
+                          title: "Link removed",
+                          description: `${link.name} has been deleted.`,
+                        });
+                      }}
                     >
-                      <div className="flex items-start gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <Link className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm leading-tight">{link.name}</p>
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {link.url}
-                          </p>
-                          {link.description && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {link.description}
+                      <div className="p-3 hover:bg-muted/30 transition-colors">
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Link className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm leading-tight">{link.name}</p>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              {link.url}
                             </p>
-                          )}
+                            {link.description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {link.description}
+                              </p>
+                            )}
+                          </div>
                         </div>
+                        <div className="flex items-center justify-end gap-1 mt-2 ml-10">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => {
+                              navigator.clipboard.writeText(link.url);
+                              toast({
+                                title: "Copied!",
+                                description: "Payment link copied to clipboard.",
+                              });
+                            }}
+                          >
+                            <Copy className="w-3 h-3 mr-1" />
+                            Copy
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => window.open(link.url, "_blank")}
+                          >
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            Open
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 hidden sm:flex"
+                            onClick={() => {
+                              setPaymentLinks(paymentLinks.filter((l) => l.id !== link.id));
+                              toast({
+                                title: "Link removed",
+                                description: `${link.name} has been deleted.`,
+                              });
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        {/* Mobile swipe hint */}
+                        <p className="text-[10px] text-muted-foreground mt-2 text-center sm:hidden">
+                          ← Swipe left to delete
+                        </p>
                       </div>
-                      <div className="flex items-center justify-end gap-1 mt-2 ml-10">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => {
-                            navigator.clipboard.writeText(link.url);
-                            toast({
-                              title: "Copied!",
-                              description: "Payment link copied to clipboard.",
-                            });
-                          }}
-                        >
-                          <Copy className="w-3 h-3 mr-1" />
-                          Copy
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => window.open(link.url, "_blank")}
-                        >
-                          <ExternalLink className="w-3 h-3 mr-1" />
-                          Open
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => {
-                            setPaymentLinks(paymentLinks.filter((l) => l.id !== link.id));
-                            toast({
-                              title: "Link removed",
-                              description: `${link.name} has been deleted.`,
-                            });
-                          }}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
+                    </SwipeToDelete>
                   ))
                 )}
               </div>
