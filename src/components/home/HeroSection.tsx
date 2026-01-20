@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 const HeroSection = () => {
   return (
-    <section className="relative overflow-hidden py-16 md:py-20 lg:py-28">
+    <section id="hero" className="relative overflow-hidden py-16 md:py-20 lg:py-28 scroll-mt-20">
       {/* Subtle background gradients */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-primary/15 via-accent/20 to-transparent rounded-full blur-3xl" />

@@ -27,7 +27,7 @@ const steps = [
 
 const HowItWorksSection = () => {
   return (
-    <section className="py-20 md:py-28 relative overflow-hidden bg-gradient-to-b from-muted/20 via-background to-muted/20">
+    <section id="how-it-works" className="py-20 md:py-28 relative overflow-hidden bg-gradient-to-b from-muted/20 via-background to-muted/20 scroll-mt-20">
       <div className="container">
         <motion.div 
           className="text-center mb-14 md:mb-20"

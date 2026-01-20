@@ -52,7 +52,7 @@ const plans = [
 
 const PricingPreview = () => {
   return (
-    <section className="py-20 md:py-28 relative overflow-hidden bg-gradient-to-b from-muted/20 via-background to-background">
+    <section id="pricing" className="py-20 md:py-28 relative overflow-hidden bg-gradient-to-b from-muted/20 via-background to-background scroll-mt-20">
       <div className="container">
         <motion.div 
           className="text-center mb-12 md:mb-16"
