@@ -37,6 +37,8 @@ import { useEmailTracking } from "@/hooks/useEmailTracking";
 import { useInvoices, InvoiceWithClient } from "@/hooks/useInvoices";
 import { useClients } from "@/hooks/useClients";
 import { useReminders } from "@/hooks/useReminders";
+import { usePaymentLinks } from "@/hooks/usePaymentLinks";
+import { CreateInvoiceForm, CreateInvoiceFormData } from "@/components/dashboard/CreateInvoiceForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CreditCard,
@@ -142,6 +144,14 @@ const Dashboard = () => {
   } = useInvoices();
   const { clients, isLoading: clientsLoading, createClient: createClientMutation } = useClients();
   const { reminders, stats: reminderStats, sendReminder: sendDbReminder } = useReminders();
+  const { 
+    paymentLinks: dbPaymentLinks, 
+    isLoading: paymentLinksLoading,
+    createPaymentLink: createPaymentLinkMutation,
+    deletePaymentLink: deletePaymentLinkMutation,
+    setDefault: setDefaultPaymentLink,
+    toggleActive: togglePaymentLinkActive,
+  } = usePaymentLinks();
 
   // Email tracking hook (for legacy compatibility)
   const { stats: emailStats, getInvoiceEmailStatus, getInvoiceLogs, sendReminder, shouldEscalateToSMS } = useEmailTracking();
@@ -213,13 +223,76 @@ const Dashboard = () => {
     });
   };
 
+  const handleCreateInvoiceNew = async (data: CreateInvoiceFormData) => {
+    const amount = parseFloat(data.amount);
+
+    if (isNaN(amount) || amount <= 0 || amount > 10000000) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount between 0.01 and 10,000,000.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.dueDate) {
+      toast({
+        title: "Missing due date",
+        description: "Please select a due date for the invoice.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // Generate invoice number
+      const invoiceNumber = `INV-${String(dbInvoices.length + 1).padStart(3, "0")}`;
+      
+      createInvoice.mutate({
+        invoice_number: invoiceNumber,
+        amount: amount,
+        due_date: data.dueDate.toISOString().split("T")[0],
+        client_name: data.clientName,
+        client_email: data.clientEmail,
+        payment_link_id: data.paymentLinkId || undefined,
+        currency: currency,
+        reminder_enabled: data.reminderSchedule.enabled,
+        reminder_tone: data.reminderSchedule.tone,
+        email_3_days_before: data.reminderSchedule.email3DaysBefore,
+        email_on_due_date: data.reminderSchedule.emailOnDueDate,
+        email_3_days_after: data.reminderSchedule.email3DaysAfter,
+        email_7_days_after: data.reminderSchedule.email7DaysAfter,
+        sms_enabled: data.reminderSchedule.smsEnabled,
+        sms_days_after_due: data.reminderSchedule.smsDaysAfterDue,
+      }, {
+        onSuccess: () => {
+          setIsSubmitting(false);
+          setIsDialogOpen(false);
+          resetForm();
+        },
+        onError: () => {
+          setIsSubmitting(false);
+        }
+      });
+    } catch (error) {
+      setIsSubmitting(false);
+      toast({
+        title: "Error",
+        description: "Failed to create invoice. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Legacy handler for backward compatibility
   const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const clientName = formData.client.trim();
     const amount = parseFloat(formData.amount);
 
-    // Validate client selection: either a client is selected or a new client name is entered
     if (!formData.clientId && (!clientName || clientName.length > 100)) {
       toast({
         title: "Invalid client",
@@ -252,20 +325,17 @@ const Dashboard = () => {
     try {
       let clientId = formData.clientId;
       
-      // Auto-create client if new name is entered
       if (!clientId && clientName) {
         const newClient = await createClientMutation.mutateAsync({ name: clientName });
         clientId = newClient.id;
       }
       
-      // Generate invoice number
       const invoiceNumber = `INV-${String(dbInvoices.length + 1).padStart(3, "0")}`;
       
       createInvoice.mutate({
         invoice_number: invoiceNumber,
         amount: amount,
         due_date: formData.dueDate,
-        status: formData.status === "overdue" ? "overdue" : "pending",
         client_id: clientId || undefined,
         currency: currency,
       }, {
@@ -735,7 +805,7 @@ const Dashboard = () => {
 
       {/* New Invoice Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create New Invoice</DialogTitle>
             <DialogDescription>
@@ -743,130 +813,26 @@ const Dashboard = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateInvoice} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="client">Client</Label>
-              {clientsLoading ? (
-                <Skeleton className="h-10 w-full" />
-              ) : clients && clients.length > 0 ? (
-                <Select
-                  value={formData.clientId}
-                  onValueChange={(value) => {
-                    if (value === "new") {
-                      setFormData({ ...formData, clientId: "", client: "" });
-                    } else {
-                      const selectedClient = clients.find(c => c.id === value);
-                      setFormData({ 
-                        ...formData, 
-                        clientId: value, 
-                        client: selectedClient?.name || "" 
-                      });
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}{client.company ? ` (${client.company})` : ""}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="new">+ Add new client</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id="client"
-                  placeholder="e.g., Acme Corp"
-                  value={formData.client}
-                  onChange={(e) =>
-                    setFormData({ ...formData, client: e.target.value })
-                  }
-                  maxLength={100}
-                  required
-                />
-              )}
-              {formData.clientId === "" && clients && clients.length > 0 && (
-                <Input
-                  id="newClient"
-                  placeholder="Enter new client name"
-                  value={formData.client}
-                  onChange={(e) =>
-                    setFormData({ ...formData, client: e.target.value })
-                  }
-                  maxLength={100}
-                  className="mt-2"
-                />
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount ({currencySymbol})</Label>
-              <Input
-                id="amount"
-                type="number"
-                placeholder="0.00"
-                min="0.01"
-                max="10000000"
-                step="0.01"
-                value={formData.amount}
-                onChange={(e) =>
-                  setFormData({ ...formData, amount: e.target.value })
-                }
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="dueDate">Due Date</Label>
-              <Input
-                id="dueDate"
-                type="date"
-                value={formData.dueDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, dueDate: e.target.value })
-                }
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value: "paid" | "pending" | "overdue") =>
-                  setFormData({ ...formData, status: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsDialogOpen(false);
-                  resetForm();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Invoice"}
-              </Button>
-            </DialogFooter>
-          </form>
+          <CreateInvoiceForm
+            paymentLinks={dbPaymentLinks.map((link) => ({
+              id: link.id,
+              url: link.url,
+              isDefault: link.is_default,
+            }))}
+            clients={(clients || []).map((client) => ({
+              id: client.id,
+              name: client.name,
+              email: client.email || null,
+              phone: client.phone || null,
+            }))}
+            currency={currency}
+            isSubmitting={isSubmitting}
+            onSubmit={handleCreateInvoiceNew}
+            onCancel={() => {
+              setIsDialogOpen(false);
+              resetForm();
+            }}
+          />
         </DialogContent>
       </Dialog>
 
