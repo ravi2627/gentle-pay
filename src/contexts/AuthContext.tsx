@@ -3,12 +3,14 @@ import { createContext, useContext, useState, ReactNode } from "react";
 interface User {
   email: string;
   name: string;
+  hasCompletedOnboarding: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string) => void;
+  login: (email: string, isReturningUser?: boolean) => void;
   logout: () => void;
+  completeOnboarding: () => void;
   isAuthenticated: boolean;
 }
 
@@ -20,10 +22,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const login = (email: string) => {
-    const newUser = { email, name: email.split("@")[0] };
+  const login = (email: string, isReturningUser: boolean = false) => {
+    // Check if this email has logged in before (simulated)
+    const existingUsers = JSON.parse(localStorage.getItem("demo_users") || "[]");
+    const existingUser = existingUsers.find((u: { email: string }) => u.email === email);
+    
+    const newUser: User = existingUser || {
+      email,
+      name: email.split("@")[0],
+      hasCompletedOnboarding: isReturningUser,
+    };
+    
+    // Save to users list if new
+    if (!existingUser) {
+      localStorage.setItem("demo_users", JSON.stringify([...existingUsers, newUser]));
+    }
+    
     setUser(newUser);
     localStorage.setItem("demo_user", JSON.stringify(newUser));
+  };
+
+  const completeOnboarding = () => {
+    if (user) {
+      const updatedUser = { ...user, hasCompletedOnboarding: true };
+      setUser(updatedUser);
+      localStorage.setItem("demo_user", JSON.stringify(updatedUser));
+      
+      // Update in users list too
+      const existingUsers = JSON.parse(localStorage.getItem("demo_users") || "[]");
+      const updatedUsers = existingUsers.map((u: User) =>
+        u.email === user.email ? updatedUser : u
+      );
+      localStorage.setItem("demo_users", JSON.stringify(updatedUsers));
+    }
   };
 
   const logout = () => {
@@ -33,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, login, logout, isAuthenticated: !!user }}
+      value={{ user, login, logout, completeOnboarding, isAuthenticated: !!user }}
     >
       {children}
     </AuthContext.Provider>

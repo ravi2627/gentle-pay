@@ -29,13 +29,14 @@ const Signup = () => {
 
     // Demo signup - simulates account creation
     setTimeout(() => {
-      login(email);
+      // New signups always go to onboarding
+      login(email, false);
       setIsLoading(false);
       toast({
         title: "Account created!",
-        description: "Welcome to PayPing. Your account is ready.",
+        description: "Let's get you set up with PayPing.",
       });
-      navigate("/dashboard");
+      navigate("/onboarding");
     }, 800);
   };
 
