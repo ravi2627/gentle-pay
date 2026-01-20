@@ -40,7 +40,25 @@ import {
   Link,
   ExternalLink,
   Trash2,
+  MoreHorizontal,
+  Edit,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Invoice {
   id: string;
@@ -119,15 +137,24 @@ const Dashboard = () => {
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>(initialPaymentLinks);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [isPaymentLinksDialogOpen, setIsPaymentLinksDialogOpen] = useState(false);
   const [isAddingLink, setIsAddingLink] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [reminderMessage, setReminderMessage] = useState(
     "Hi {client},\n\nThis is a friendly reminder that invoice {invoice_id} for ${amount} is due on {due_date}.\n\nPlease let us know if you have any questions.\n\nBest regards"
   );
   const [formData, setFormData] = useState({
+    client: "",
+    amount: "",
+    dueDate: "",
+    status: "pending" as "paid" | "pending" | "overdue",
+  });
+  const [editFormData, setEditFormData] = useState({
     client: "",
     amount: "",
     dueDate: "",
@@ -220,6 +247,104 @@ const Dashboard = () => {
         description: `Invoice ${newInvoice.id} for ${newInvoice.client} has been created.`,
       });
     }, 500);
+  };
+
+  const handleEditInvoice = () => {
+    if (!selectedInvoice) return;
+
+    const clientName = editFormData.client.trim();
+    const amount = parseFloat(editFormData.amount);
+
+    if (!clientName || clientName.length > 100) {
+      toast({
+        title: "Invalid client name",
+        description: "Please enter a valid client name (max 100 characters).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isNaN(amount) || amount <= 0 || amount > 10000000) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount between $0.01 and $10,000,000.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!editFormData.dueDate) {
+      toast({
+        title: "Missing due date",
+        description: "Please select a due date for the invoice.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    setTimeout(() => {
+      setInvoices(
+        invoices.map((inv) =>
+          inv.id === selectedInvoice.id
+            ? {
+                ...inv,
+                client: clientName,
+                amount: amount,
+                status: editFormData.status,
+                dueDate: new Date(editFormData.dueDate).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                }),
+              }
+            : inv
+        )
+      );
+
+      setIsSubmitting(false);
+      setIsEditDialogOpen(false);
+      setSelectedInvoice(null);
+
+      toast({
+        title: "Invoice updated!",
+        description: `Invoice ${selectedInvoice.id} has been updated.`,
+      });
+    }, 500);
+  };
+
+  const handleDeleteInvoice = () => {
+    if (!selectedInvoice) return;
+
+    setInvoices(invoices.filter((inv) => inv.id !== selectedInvoice.id));
+    setIsDeleteDialogOpen(false);
+
+    toast({
+      title: "Invoice deleted",
+      description: `Invoice ${selectedInvoice.id} has been removed.`,
+    });
+
+    setSelectedInvoice(null);
+  };
+
+  const openEditDialog = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    // Parse the date string back to YYYY-MM-DD format for the input
+    const parsedDate = new Date(invoice.dueDate);
+    const formattedDate = parsedDate.toISOString().split("T")[0];
+    setEditFormData({
+      client: invoice.client,
+      amount: String(invoice.amount),
+      dueDate: formattedDate,
+      status: invoice.status,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsDeleteDialogOpen(true);
   };
 
   if (!isAuthenticated) {
@@ -418,6 +543,9 @@ const Dashboard = () => {
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
                       Status
                     </th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -441,6 +569,28 @@ const Dashboard = () => {
                       </td>
                       <td className="py-4 px-4">
                         {getStatusBadge(invoice.status)}
+                      </td>
+                      <td className="py-4 px-4 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditDialog(invoice)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit Invoice
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => openDeleteDialog(invoice)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   ))}
@@ -933,6 +1083,120 @@ const Dashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Invoice Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Invoice</DialogTitle>
+            <DialogDescription>
+              Update invoice {selectedInvoice?.id} details.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editClient">Client Name</Label>
+              <Input
+                id="editClient"
+                placeholder="e.g., Acme Corp"
+                value={editFormData.client}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, client: e.target.value })
+                }
+                maxLength={100}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editAmount">Amount ($)</Label>
+              <Input
+                id="editAmount"
+                type="number"
+                placeholder="0.00"
+                min="0.01"
+                max="10000000"
+                step="0.01"
+                value={editFormData.amount}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, amount: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editDueDate">Due Date</Label>
+              <Input
+                id="editDueDate"
+                type="date"
+                value={editFormData.dueDate}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, dueDate: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editStatus">Status</Label>
+              <Select
+                value={editFormData.status}
+                onValueChange={(value: "paid" | "pending" | "overdue") =>
+                  setEditFormData({ ...editFormData, status: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditDialogOpen(false);
+                setSelectedInvoice(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleEditInvoice} disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Invoice?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete invoice {selectedInvoice?.id} for{" "}
+              <strong>{selectedInvoice?.client}</strong> (${selectedInvoice?.amount.toLocaleString()})?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedInvoice(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteInvoice}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
