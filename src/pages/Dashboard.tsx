@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,10 @@ import { EmailTrackingCards } from "@/components/dashboard/EmailTrackingCards";
 import { EmailStatusIndicator } from "@/components/dashboard/EmailStatusIndicator";
 import { InvoiceActivityTimeline, reminderLogsToActivities } from "@/components/dashboard/InvoiceActivityTimeline";
 import { useEmailTracking } from "@/hooks/useEmailTracking";
+import { useInvoices, InvoiceWithClient } from "@/hooks/useInvoices";
+import { useClients } from "@/hooks/useClients";
+import { useReminders } from "@/hooks/useReminders";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   CreditCard,
   Mail,
@@ -48,6 +52,7 @@ import {
   MoreHorizontal,
   Edit,
   Eye,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -74,7 +79,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-interface Invoice {
+// Local invoice type for UI compatibility
+interface LocalInvoice {
   id: string;
   client: string;
   amount: number;
@@ -117,51 +123,9 @@ const initialPaymentLinks: PaymentLink[] = [
   },
 ];
 
-const initialInvoices: Invoice[] = [
-  {
-    id: "INV-001",
-    client: "Acme Corp",
-    amount: 2500,
-    status: "paid",
-    dueDate: "Jan 15, 2026",
-    reminders: 2,
-  },
-  {
-    id: "INV-002",
-    client: "TechStart Inc",
-    amount: 4200,
-    status: "pending",
-    dueDate: "Jan 22, 2026",
-    reminders: 1,
-  },
-  {
-    id: "INV-003",
-    client: "Design Studio",
-    amount: 1800,
-    status: "overdue",
-    dueDate: "Jan 10, 2026",
-    reminders: 4,
-  },
-  {
-    id: "INV-004",
-    client: "Marketing Pro",
-    amount: 3100,
-    status: "pending",
-    dueDate: "Jan 28, 2026",
-    reminders: 0,
-  },
-  {
-    id: "INV-005",
-    client: "Acme Corp",
-    amount: 5000,
-    status: "paid",
-    dueDate: "Dec 20, 2025",
-    reminders: 1,
-  },
-];
-
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const displayName = profile?.business_name || user?.email?.split("@")[0] || "User";
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -174,7 +138,7 @@ const Dashboard = () => {
 
   const currencySymbol = CURRENCIES.find((c) => c.code === currency)?.symbol || "$";
 
-  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+  const [invoices, setInvoices] = useState<LocalInvoice[]>([]);
   const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>(initialPaymentLinks);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -182,11 +146,11 @@ const Dashboard = () => {
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [isPaymentLinksDialogOpen, setIsPaymentLinksDialogOpen] = useState(false);
   const [isActivitySheetOpen, setIsActivitySheetOpen] = useState(false);
-  const [selectedActivityInvoice, setSelectedActivityInvoice] = useState<Invoice | null>(null);
+  const [selectedActivityInvoice, setSelectedActivityInvoice] = useState<LocalInvoice | null>(null);
   const [isAddingLink, setIsAddingLink] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<LocalInvoice | null>(null);
   const [reminderMessage, setReminderMessage] = useState(
     "Hi {client},\n\nThis is a friendly reminder that invoice {invoice_id} for {currency}{amount} is due on {due_date}.\n\nPlease let us know if you have any questions.\n\nBest regards"
   );
@@ -253,7 +217,7 @@ const Dashboard = () => {
     setIsSubmitting(true);
 
     setTimeout(() => {
-      const newInvoice: Invoice = {
+      const newInvoice: LocalInvoice = {
         id: `INV-${String(invoices.length + 1).padStart(3, "0")}`,
         client: clientName,
         amount: amount,
@@ -357,7 +321,7 @@ const Dashboard = () => {
     setSelectedInvoice(null);
   };
 
-  const openEditDialog = (invoice: Invoice) => {
+  const openEditDialog = (invoice: LocalInvoice) => {
     setSelectedInvoice(invoice);
     const parsedDate = new Date(invoice.dueDate);
     const formattedDate = parsedDate.toISOString().split("T")[0];
@@ -370,7 +334,7 @@ const Dashboard = () => {
     setIsEditDialogOpen(true);
   };
 
-  const openDeleteDialog = (invoice: Invoice) => {
+  const openDeleteDialog = (invoice: LocalInvoice) => {
     setSelectedInvoice(invoice);
     setIsDeleteDialogOpen(true);
   };
@@ -437,14 +401,14 @@ const Dashboard = () => {
     });
   };
 
-  const openActivitySheet = (invoice: Invoice) => {
+  const openActivitySheet = (invoice: LocalInvoice) => {
     setSelectedActivityInvoice(invoice);
     setIsActivitySheetOpen(true);
   };
 
   return (
     <DashboardLayout
-      title={`Welcome back, ${user?.name || "User"}! 👋`}
+      title={`Welcome back, ${displayName}! 👋`}
       description="Here's what's happening with your invoices today."
     >
       {/* Floating Action Button - Mobile only */}

@@ -20,24 +20,31 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { login } = useAuth();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Demo signup - simulates account creation
-    setTimeout(() => {
-      // New signups always go to onboarding
-      login(email, false);
-      setIsLoading(false);
+    const { error } = await signUp(email, password);
+    
+    setIsLoading(false);
+    
+    if (error) {
       toast({
-        title: "Account created!",
-        description: "Let's get you set up with PayPing.",
+        title: "Signup failed",
+        description: error.message || "Failed to create account",
+        variant: "destructive",
       });
-      navigate("/onboarding");
-    }, 800);
+      return;
+    }
+
+    toast({
+      title: "Account created!",
+      description: "Please check your email to verify your account, then log in.",
+    });
+    navigate("/login");
   };
 
   return (
