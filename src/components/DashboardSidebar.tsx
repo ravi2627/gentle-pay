@@ -59,8 +59,9 @@ export function DashboardSidebar() {
         <div className="flex items-center gap-3">
           <img 
             src={logo} 
-            alt="RemindSwift Logo" 
-            className={`${collapsed ? "h-8 w-8 object-contain object-left" : "h-8 w-auto"} transition-all`}
+            alt="RemindSwift – Invoice Reminder SaaS" 
+            className={`${collapsed ? "h-8 w-8 object-contain object-left" : "h-9 w-auto"} transition-all duration-200`}
+            loading="eager"
           />
         </div>
       </SidebarHeader>

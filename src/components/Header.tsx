@@ -67,13 +67,19 @@ const Header = () => {
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="container flex h-16 md:h-20 items-center justify-between">
-        {/* Logo - Responsive */}
-        <Link to="/" className="flex items-center group flex-shrink-0">
+      <div className="container flex h-16 md:h-18 lg:h-20 items-center justify-between gap-4">
+        {/* Logo - Responsive & Premium */}
+        <Link 
+          to="/" 
+          className="flex items-center group flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md"
+          aria-label="RemindSwift Home"
+        >
           <img 
             src={logo} 
-            alt="RemindSwift Logo" 
-            className="h-8 md:h-10 w-auto object-contain"
+            alt="RemindSwift – Invoice Reminder SaaS" 
+            className="h-9 sm:h-10 md:h-11 lg:h-12 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.02]"
+            loading="eager"
+            decoding="async"
           />
         </Link>
 
@@ -110,24 +116,30 @@ const Header = () => {
         </div>
 
         {/* Mobile Auth + Menu */}
-        <div className="md:hidden flex items-center gap-1">
+        <div className="lg:hidden flex items-center gap-2">
           {/* Mobile Login Button - Always visible */}
-          <Link to="/login">
-            <Button size="sm" variant="ghost" className="text-foreground font-medium min-h-[40px] px-3">
+          <Link to="/login" className="hidden sm:block">
+            <Button size="sm" variant="ghost" className="text-foreground font-medium min-h-[44px] px-4">
               Login
+            </Button>
+          </Link>
+          <Link to="/signup" className="sm:hidden">
+            <Button size="sm" className="bg-primary hover:bg-primary/90 min-h-[44px] px-4 text-sm font-medium">
+              Sign Up
             </Button>
           </Link>
           
           {/* Mobile Menu Button */}
           <button
-            className="p-2 rounded-lg hover:bg-muted/50 transition-colors"
+            className="p-2.5 rounded-xl hover:bg-muted/50 active:bg-muted transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
+            aria-expanded={isMenuOpen}
           >
             {isMenuOpen ? (
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5" />
             ) : (
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5" />
             )}
           </button>
         </div>
