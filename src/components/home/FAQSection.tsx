@@ -8,19 +8,19 @@ import { motion } from "framer-motion";
 
 const faqs = [
   {
-    question: "What payment methods does PayPing support?",
+    question: "What payment methods does RemindSwift support?",
     answer:
-      "PayPing doesn't process payments directly. Instead, you provide your own payment link (Stripe, PayPal, bank transfer, etc.) and we include it in every reminder. This means you keep full control of your payment setup.",
+      "RemindSwift doesn't process payments directly. Instead, you provide your own payment link (Stripe, PayPal, bank transfer, etc.) and we include it in every reminder. This means you keep full control of your payment setup.",
   },
   {
     question: "How do automated reminders work?",
     answer:
-      "You set a schedule (e.g., 3 days before due, on due date, 3 days after). PayPing automatically sends friendly reminder emails or SMS to your clients at those times, including your payment link.",
+      "You set a schedule (e.g., 3 days before due, on due date, 3 days after). RemindSwift automatically sends polite reminder emails or SMS to your clients at those times, including your payment link.",
   },
   {
     question: "Can I customize the reminder messages?",
     answer:
-      "Yes! You can edit the email templates to match your brand and tone. Our default templates are friendly and professional, designed to maintain good client relationships.",
+      "Yes! You can edit the email templates to match your brand and tone. Our default templates are polite and professional, designed to maintain good client relationships.",
   },
   {
     question: "What if my client has already paid?",
@@ -38,9 +38,9 @@ const faqs = [
       "The Pro plan includes 150 SMS per month, and the Agency plan includes 500. Additional SMS can be purchased in top-up packs if needed.",
   },
   {
-    question: "Can I use PayPing with my existing invoicing software?",
+    question: "Can I use RemindSwift with my existing invoicing software?",
     answer:
-      "Absolutely. PayPing is designed to complement your existing tools, not replace them. Just enter the invoice details and payment link—we handle the follow-ups.",
+      "Absolutely. RemindSwift is designed to complement your existing tools, not replace them. Just enter the invoice details and payment link—we handle the follow-ups.",
   },
   {
     question: "Is my data secure?",
@@ -69,7 +69,7 @@ const FAQSection = () => {
             Frequently asked questions
           </h2>
           <p className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto">
-            Everything you need to know about PayPing
+            Everything you need to know about RemindSwift
           </p>
         </motion.div>
 

@@ -297,7 +297,7 @@ export const TeamManagement = ({ plan }: TeamManagementProps) => {
           <DialogHeader>
             <DialogTitle>Invite Team Member</DialogTitle>
             <DialogDescription>
-              Send an invitation to join your team on PayPing.
+              Send an invitation to join your team on RemindSwift.
             </DialogDescription>
           </DialogHeader>
 

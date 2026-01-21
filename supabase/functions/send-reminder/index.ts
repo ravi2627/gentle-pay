@@ -11,7 +11,7 @@ async function sendEmailWithResend(to: string[], subject: string, html: string, 
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "InvoiceNudge <onboarding@resend.dev>",
+      from: "RemindSwift <onboarding@resend.dev>",
       to,
       subject,
       html,
@@ -57,10 +57,10 @@ interface EmailTemplate {
 // Email templates
 const emailTemplates: Record<TemplateTone, EmailTemplate> = {
   polite: {
-    subject: "Friendly Reminder: Invoice {{invoiceNumber}} Payment",
+    subject: "Friendly Reminder: Invoice {{invoiceNumber}}",
     body: `Hi {{clientName}},
 
-I hope this message finds you well! Just a gentle reminder about invoice {{invoiceNumber}} for {{currency}}{{amount}}, which is due on {{dueDate}}.
+I hope this message finds you well! Just a polite reminder about invoice {{invoiceNumber}} for {{currency}}{{amount}}, which is due on {{dueDate}}.
 
 When you have a moment, you can complete the payment using the link below:
 {{paymentLink}}
@@ -68,10 +68,13 @@ When you have a moment, you can complete the payment using the link below:
 If you've already sent the payment, please disregard this message. Thank you so much for your business!
 
 Warm regards,
-{{senderName}}`,
+{{senderName}}
+
+—
+Sent via RemindSwift`,
   },
   professional: {
-    subject: "Payment Reminder: Invoice {{invoiceNumber}}",
+    subject: "Invoice Reminder: {{invoiceNumber}}",
     body: `Dear {{clientName}},
 
 This is a reminder regarding invoice {{invoiceNumber}} for {{currency}}{{amount}}, due on {{dueDate}}.
@@ -82,10 +85,13 @@ Please process the payment at your earliest convenience using the following link
 If you have any questions about this invoice, please don't hesitate to reach out.
 
 Best regards,
-{{senderName}}`,
+{{senderName}}
+
+—
+Sent via RemindSwift`,
   },
   firm: {
-    subject: "Action Required: Invoice {{invoiceNumber}} Payment Overdue",
+    subject: "Action Required: Invoice {{invoiceNumber}} Overdue",
     body: `Dear {{clientName}},
 
 Invoice {{invoiceNumber}} for {{currency}}{{amount}} was due on {{dueDate}} and requires immediate attention.
@@ -96,7 +102,10 @@ Please complete the payment today using the link below:
 If there are any issues preventing payment, please contact us immediately to discuss.
 
 Regards,
-{{senderName}}`,
+{{senderName}}
+
+—
+Sent via RemindSwift`,
   },
 };
 
@@ -139,13 +148,14 @@ function convertToHtml(text: string, paymentLink: string): string {
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">Payment Reminder</h1>
+    <h1 style="color: white; margin: 0; font-size: 24px;">Invoice Reminder</h1>
+    <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0 0; font-size: 14px;">from RemindSwift</p>
   </div>
   <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
     <pre style="font-family: inherit; white-space: pre-wrap; margin: 0;">${linkedText}</pre>
   </div>
   <div style="text-align: center; padding: 20px; color: #6b7280; font-size: 12px;">
-    <p>This is an automated reminder. Please do not reply to this email.</p>
+    <p>This is an automated reminder from RemindSwift.</p>
   </div>
 </body>
 </html>`;

@@ -12,7 +12,7 @@ const steps = [
     description:
       "Enter the client's name, email, invoice amount, and due date. Then paste your payment link—whether it's Stripe, PayPal, or a simple bank transfer page.",
     details: [
-      "No need to create invoices in PayPing",
+      "No need to create invoices in RemindSwift",
       "Works with any payment method you already use",
       "Takes less than 2 minutes to set up",
     ],
@@ -34,7 +34,7 @@ const steps = [
     icon: Send,
     title: "Automated reminders go out",
     description:
-      "PayPing sends professional, friendly reminders to your client at the times you specified. Each reminder includes your payment link for easy payment.",
+      "RemindSwift sends polite, professional reminders to your client at the times you specified. Each reminder includes your payment link for easy payment.",
     details: [
       "Professional templates that maintain relationships",
       "Your payment link in every message",
@@ -64,10 +64,10 @@ const HowItWorks = () => {
         <section className="py-20 bg-muted/30">
           <div className="container text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              How PayPing works
+              How RemindSwift works
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Four simple steps to automate your payment reminders and get paid faster.
+              Four simple steps to automate your invoice reminders and get paid faster.
             </p>
           </div>
         </section>

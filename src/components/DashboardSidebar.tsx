@@ -62,7 +62,7 @@ export function DashboardSidebar() {
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-bold text-base">PayPing</span>
+              <span className="font-bold text-base">RemindSwift</span>
             </div>
           )}
         </div>
