@@ -132,11 +132,12 @@ function convertToHtml(text: string, paymentLink: string, variables: TemplateVar
   const lines = text.split('\n');
   const formattedLines = lines.map(line => {
     if (line.trim() === '') return '<br>';
+    if (line.includes(paymentLink)) return ''; // Remove payment link from body (we have CTA)
     const escapedLine = line
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
-    return `<p style="margin: 0 0 12px 0;">${escapedLine}</p>`;
+    return `<p style="margin: 0 0 14px 0; color: #374151;">${escapedLine}</p>`;
   }).join('');
   
   return `
@@ -145,74 +146,106 @@ function convertToHtml(text: string, paymentLink: string, variables: TemplateVar
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice Reminder - RemindSwift</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; margin: 0; padding: 0;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f8fafc; margin: 0; padding: 0;">
   <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-    <!-- Header -->
-    <div style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); padding: 32px 24px; border-radius: 16px 16px 0 0; text-align: center;">
-      <div style="display: inline-block; background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 8px; margin-bottom: 16px;">
-        <span style="color: white; font-size: 20px; font-weight: 700; letter-spacing: -0.5px;">🔔 RemindSwift</span>
-      </div>
-      <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 600;">Invoice Reminder</h1>
-    </div>
     
-    <!-- Invoice Summary Card -->
-    <div style="background: #ffffff; padding: 24px; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb;">
-      <div style="background: linear-gradient(135deg, #F5F3FF 0%, #EEF2FF 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-        <table style="width: 100%; border-collapse: collapse;">
+    <!-- Logo Header -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block;">
+        <table cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td style="padding: 8px 0;">
-              <span style="color: #6b7280; font-size: 13px;">Invoice</span><br>
-              <span style="color: #1f2937; font-size: 16px; font-weight: 600;">${variables.invoiceNumber}</span>
+            <td style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); width: 44px; height: 44px; border-radius: 12px; text-align: center; vertical-align: middle;">
+              <span style="font-size: 22px; line-height: 44px;">🔔</span>
             </td>
-            <td style="padding: 8px 0; text-align: right;">
-              <span style="color: #6b7280; font-size: 13px;">Amount Due</span><br>
-              <span style="color: #4F46E5; font-size: 20px; font-weight: 700;">${variables.currency}${variables.amount}</span>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2" style="padding: 8px 0; border-top: 1px dashed #d1d5db;">
-              <span style="color: #6b7280; font-size: 13px;">Due Date</span><br>
-              <span style="color: #1f2937; font-size: 16px; font-weight: 500;">${variables.dueDate}</span>
+            <td style="padding-left: 12px;">
+              <span style="font-size: 24px; font-weight: 700; color: #1f2937; letter-spacing: -0.5px;">Remind</span><span style="font-size: 24px; font-weight: 700; color: #4F46E5; letter-spacing: -0.5px;">Swift</span>
             </td>
           </tr>
         </table>
       </div>
     </div>
     
-    <!-- Message Body -->
-    <div style="background: #ffffff; padding: 0 24px 24px 24px; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb;">
-      <div style="color: #374151; font-size: 15px; line-height: 1.7;">
-        ${formattedLines.replace(paymentLink, '')}
+    <!-- Main Card -->
+    <div style="background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);">
+      
+      <!-- Header Banner -->
+      <div style="background: linear-gradient(135deg, #4F46E5 0%, #6366F1 50%, #7C3AED 100%); padding: 32px 24px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">Payment Reminder</h1>
+        <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0 0; font-size: 14px;">A friendly nudge about your invoice</p>
       </div>
       
-      <!-- CTA Button -->
-      <div style="text-align: center; margin: 32px 0 16px 0;">
-        <a href="${paymentLink}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);">
-          💳 Pay Now
-        </a>
+      <!-- Invoice Details Card -->
+      <div style="padding: 28px 24px;">
+        <div style="background: linear-gradient(135deg, #F5F3FF 0%, #EEF2FF 100%); border-radius: 16px; padding: 24px; margin-bottom: 24px; border: 1px solid #E0E7FF;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 0 0 16px 0;">
+                <span style="color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Invoice Number</span><br>
+                <span style="color: #1f2937; font-size: 18px; font-weight: 600;">${variables.invoiceNumber}</span>
+              </td>
+              <td style="padding: 0 0 16px 0; text-align: right;">
+                <span style="color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Amount Due</span><br>
+                <span style="color: #4F46E5; font-size: 26px; font-weight: 700;">${variables.currency}${variables.amount}</span>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding: 16px 0 0 0; border-top: 1px dashed #C7D2FE;">
+                <span style="color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Due Date</span><br>
+                <span style="color: #1f2937; font-size: 16px; font-weight: 500;">📅 ${variables.dueDate}</span>
+              </td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- Message Content -->
+        <div style="font-size: 15px; line-height: 1.8; margin-bottom: 28px;">
+          ${formattedLines}
+        </div>
+        
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${paymentLink}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); color: white; text-decoration: none; padding: 18px 48px; border-radius: 12px; font-size: 16px; font-weight: 600; box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.5); letter-spacing: 0.3px;">
+            Pay Now →
+          </a>
+        </div>
+        
+        <p style="text-align: center; color: #9ca3af; font-size: 12px; margin: 0;">
+          🔒 Secure payment via your preferred provider
+        </p>
       </div>
-      <p style="text-align: center; color: #9ca3af; font-size: 13px; margin: 0;">
-        Secure payment powered by your provider
+      
+      <!-- Footer -->
+      <div style="background: #f9fafb; padding: 24px; border-top: 1px solid #e5e7eb;">
+        <table style="width: 100%;">
+          <tr>
+            <td style="text-align: center;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0 0 4px 0;">
+                Sent on behalf of
+              </p>
+              <p style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0;">
+                ${variables.senderName}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Bottom Branding -->
+    <div style="text-align: center; padding: 28px 20px;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0 0 8px 0;">
+        Automated reminder powered by
+      </p>
+      <a href="https://remindswift.com" style="color: #4F46E5; text-decoration: none; font-weight: 600; font-size: 13px;">
+        RemindSwift
+      </a>
+      <p style="color: #d1d5db; font-size: 11px; margin: 16px 0 0 0;">
+        If you've already paid, please disregard this message.
       </p>
     </div>
     
-    <!-- Footer -->
-    <div style="background: #f9fafb; padding: 24px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 16px 16px; text-align: center;">
-      <p style="color: #6b7280; font-size: 13px; margin: 0 0 8px 0;">
-        Sent on behalf of <strong>${variables.senderName}</strong>
-      </p>
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-        Automated reminder powered by <a href="https://remindswift.com" style="color: #4F46E5; text-decoration: none;">RemindSwift</a>
-      </p>
-    </div>
-    
-    <!-- Unsubscribe Note -->
-    <div style="text-align: center; padding: 20px;">
-      <p style="color: #9ca3af; font-size: 11px; margin: 0;">
-        If you've already made the payment, please disregard this reminder.
-      </p>
-    </div>
   </div>
 </body>
 </html>`;
