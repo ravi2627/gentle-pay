@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Zap } from "lucide-react";
+import { Menu, X, BellRing } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Header = () => {
@@ -72,7 +72,7 @@ const Header = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2 group">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-foreground flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/30 transition-shadow">
-            <Zap className="w-5 h-5 text-white" />
+            <BellRing className="w-5 h-5 text-white animate-[wiggle_1s_ease-in-out_infinite]" />
           </div>
           <span className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
             RemindSwift

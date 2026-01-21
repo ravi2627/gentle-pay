@@ -23,7 +23,7 @@ import {
   CreditCard,
   LogOut,
   HelpCircle,
-  Zap,
+  BellRing,
   BarChart3,
 } from "lucide-react";
 
@@ -58,7 +58,7 @@ export function DashboardSidebar() {
       <SidebarHeader className="border-b border-border p-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent-foreground flex items-center justify-center shadow-lg shadow-primary/20">
-            <Zap className="w-5 h-5 text-white" />
+            <BellRing className="w-5 h-5 text-white animate-[wiggle_1s_ease-in-out_infinite]" />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
