@@ -11,7 +11,7 @@ async function sendEmailWithResend(to: string[], subject: string, html: string, 
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "RemindSwift <onboarding@resend.dev>",
+      from: "RemindSwift <support@remindswift.com>",
       to,
       subject,
       html,
