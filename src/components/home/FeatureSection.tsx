@@ -64,7 +64,7 @@ const FeatureSection = () => {
             </span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg">
-            PayPing is not another invoicing tool. It's a focused reminder system that works with your existing payment setup.
+            RemindSwift is not another invoicing tool. It's a focused reminder system that works with your existing payment setup.
           </p>
         </motion.div>
 

@@ -14,19 +14,19 @@ const faqCategories = [
     title: "Getting Started",
     faqs: [
       {
-        question: "What is PayPing?",
+        question: "What is RemindSwift?",
         answer:
-          "PayPing is an automated payment reminder tool for freelancers and small agencies. It sends friendly reminders to your clients about outstanding invoices, including your payment link in every message. It's not an invoicing tool—it works with whatever payment method you already use.",
+          "RemindSwift is an automated invoice reminder tool for freelancers and small agencies. It sends polite reminders to your clients about outstanding invoices, including your payment link in every message. It's not an invoicing tool—it works with whatever payment method you already use.",
       },
       {
         question: "How do I get started?",
         answer:
-          "Sign up for a free account, add your first invoice with client details and your payment link, set a reminder schedule, and you're done. PayPing will handle the follow-ups automatically.",
+          "Sign up for a free account, add your first invoice with client details and your payment link, set a reminder schedule, and you're done. RemindSwift will handle the follow-ups automatically.",
       },
       {
-        question: "Do I need to create invoices in PayPing?",
+        question: "Do I need to create invoices in RemindSwift?",
         answer:
-          "No. PayPing focuses only on reminders. You create invoices using your existing tools (accounting software, Word docs, etc.) and just enter the basic details into PayPing along with your payment link.",
+          "No. RemindSwift focuses only on reminders. You create invoices using your existing tools (accounting software, Word docs, etc.) and just enter the basic details into RemindSwift along with your payment link.",
       },
     ],
   },
@@ -34,19 +34,19 @@ const faqCategories = [
     title: "Payments & Integration",
     faqs: [
       {
-        question: "What payment methods does PayPing support?",
+        question: "What payment methods does RemindSwift support?",
         answer:
-          "PayPing works with any payment method. Just paste your payment link (Stripe, PayPal, bank transfer page, or any URL) and we include it in every reminder. You keep full control of your payment setup.",
+          "RemindSwift works with any payment method. Just paste your payment link (Stripe, PayPal, bank transfer page, or any URL) and we include it in every reminder. You keep full control of your payment setup.",
       },
       {
-        question: "Can I use PayPing with my existing invoicing software?",
+        question: "Can I use RemindSwift with my existing invoicing software?",
         answer:
-          "Absolutely. PayPing is designed to complement your existing tools, not replace them. Just enter the invoice details and payment link—we handle the follow-ups.",
+          "Absolutely. RemindSwift is designed to complement your existing tools, not replace them. Just enter the invoice details and payment link—we handle the follow-ups.",
       },
       {
-        question: "Does PayPing process payments?",
+        question: "Does RemindSwift process payments?",
         answer:
-          "No. PayPing never touches your money. Clients pay directly through your payment link, and you receive funds through your existing payment provider.",
+          "No. RemindSwift never touches your money. Clients pay directly through your payment link, and you receive funds through your existing payment provider.",
       },
     ],
   },
@@ -56,12 +56,12 @@ const faqCategories = [
       {
         question: "How do automated reminders work?",
         answer:
-          "You set a schedule (e.g., 3 days before due, on due date, 3 days after). PayPing automatically sends friendly reminder emails or SMS to your clients at those times, including your payment link.",
+          "You set a schedule (e.g., 3 days before due, on due date, 3 days after). RemindSwift automatically sends polite reminder emails or SMS to your clients at those times, including your payment link.",
       },
       {
         question: "Can I customize the reminder messages?",
         answer:
-          "Yes! You can edit the email templates to match your brand and tone. Our default templates are friendly and professional, designed to maintain good client relationships.",
+          "Yes! You can edit the email templates to match your brand and tone. Our default templates are polite and professional, designed to maintain good client relationships.",
       },
       {
         question: "What if my client has already paid?",
@@ -129,7 +129,7 @@ const FAQ = () => {
               Frequently asked questions
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Everything you need to know about PayPing. Can't find the answer you're looking for? Reach out to our support team.
+              Everything you need to know about RemindSwift. Can't find the answer you're looking for? Reach out to our support team.
             </p>
           </div>
         </section>

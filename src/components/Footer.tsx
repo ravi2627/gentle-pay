@@ -26,11 +26,10 @@ const Footer = () => {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-foreground flex items-center justify-center shadow-lg shadow-primary/20">
                 <Zap className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-foreground">PayPing</span>
+              <span className="text-xl font-bold text-foreground">RemindSwift</span>
             </Link>
             <p className="text-muted-foreground max-w-sm leading-relaxed">
-              Automated payment reminders for freelancers and small agencies. 
-              Get paid on time, without the awkward follow-ups.
+              Polite reminders. Faster payments. Automated invoice reminders for freelancers and small agencies.
             </p>
           </div>
 
@@ -72,7 +71,7 @@ const Footer = () => {
         {/* Bottom */}
         <div className="border-t border-border/50 mt-12 pt-8 text-center">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} PayPing. All rights reserved.
+            © {currentYear} RemindSwift. All rights reserved.
           </p>
         </div>
       </div>

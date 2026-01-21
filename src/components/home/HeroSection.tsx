@@ -42,8 +42,8 @@ const HeroSection = () => {
             </h1>
             
             <p className="mt-6 text-lg text-muted-foreground max-w-lg mx-auto lg:mx-0 leading-relaxed">
-              Automate your payment reminders. Add your invoice, set a schedule, 
-              and let PayPing handle the rest while you focus on your work.
+              Automate your invoice reminders. Add your invoice, set a schedule, 
+              and let RemindSwift handle the rest while you focus on your work.
             </p>
 
             {/* CTAs */}
@@ -142,7 +142,7 @@ const HeroSection = () => {
                 </div>
                 <div className="flex-1 mx-4">
                   <div className="bg-background/70 rounded-md px-3 py-1 text-xs text-muted-foreground text-center max-w-[180px] mx-auto font-mono">
-                    app.payping.io
+                    app.remindswift.com
                   </div>
                 </div>
               </div>

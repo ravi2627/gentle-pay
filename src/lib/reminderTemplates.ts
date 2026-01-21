@@ -23,10 +23,10 @@ export interface EmailTemplate {
 // Email templates by tone
 const emailTemplates: Record<TemplateTone, EmailTemplate> = {
   polite: {
-    subject: "Friendly Reminder: Invoice {{invoiceNumber}} Payment",
+    subject: "Friendly Reminder: Invoice {{invoiceNumber}}",
     body: `Hi {{clientName}},
 
-I hope this message finds you well! Just a gentle reminder about invoice {{invoiceNumber}} for {{currency}}{{amount}}, which is due on {{dueDate}}.
+I hope this message finds you well! Just a polite reminder about invoice {{invoiceNumber}} for {{currency}}{{amount}}, which is due on {{dueDate}}.
 
 When you have a moment, you can complete the payment using the link below:
 {{paymentLink}}
@@ -34,10 +34,13 @@ When you have a moment, you can complete the payment using the link below:
 If you've already sent the payment, please disregard this message. Thank you so much for your business!
 
 Warm regards,
-{{senderName}}`,
+{{senderName}}
+
+—
+Sent via RemindSwift`,
   },
   professional: {
-    subject: "Payment Reminder: Invoice {{invoiceNumber}}",
+    subject: "Invoice Reminder: {{invoiceNumber}}",
     body: `Dear {{clientName}},
 
 This is a reminder regarding invoice {{invoiceNumber}} for {{currency}}{{amount}}, due on {{dueDate}}.
@@ -48,10 +51,13 @@ Please process the payment at your earliest convenience using the following link
 If you have any questions about this invoice, please don't hesitate to reach out.
 
 Best regards,
-{{senderName}}`,
+{{senderName}}
+
+—
+Sent via RemindSwift`,
   },
   firm: {
-    subject: "Action Required: Invoice {{invoiceNumber}} Payment Overdue",
+    subject: "Action Required: Invoice {{invoiceNumber}} Overdue",
     body: `Dear {{clientName}},
 
 Invoice {{invoiceNumber}} for {{currency}}{{amount}} was due on {{dueDate}} and requires immediate attention.
@@ -62,15 +68,18 @@ Please complete the payment today using the link below:
 If there are any issues preventing payment, please contact us immediately to discuss.
 
 Regards,
-{{senderName}}`,
+{{senderName}}
+
+—
+Sent via RemindSwift`,
   },
 };
 
 // SMS templates by tone
 const smsTemplates: Record<TemplateTone, string> = {
-  polite: `Hi {{clientName}}! Quick reminder about invoice {{invoiceNumber}} ({{currency}}{{amount}}) due {{dueDate}}. Pay here: {{paymentLink}} — {{senderName}}`,
-  professional: `Payment reminder: Invoice {{invoiceNumber}} for {{currency}}{{amount}} is due {{dueDate}}. Pay now: {{paymentLink}} — {{senderName}}`,
-  firm: `URGENT: Invoice {{invoiceNumber}} ({{currency}}{{amount}}) is overdue. Pay immediately: {{paymentLink}} — {{senderName}}`,
+  polite: `Hi {{clientName}}! Quick reminder about invoice {{invoiceNumber}} ({{currency}}{{amount}}) due {{dueDate}}. Pay here: {{paymentLink}} — {{senderName}} via RemindSwift`,
+  professional: `Invoice reminder: {{invoiceNumber}} for {{currency}}{{amount}} is due {{dueDate}}. Pay now: {{paymentLink}} — {{senderName}} via RemindSwift`,
+  firm: `URGENT: Invoice {{invoiceNumber}} ({{currency}}{{amount}}) is overdue. Pay immediately: {{paymentLink}} — {{senderName}} via RemindSwift`,
 };
 
 /**

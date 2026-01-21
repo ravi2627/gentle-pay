@@ -74,7 +74,7 @@ const Header = () => {
             <Zap className="w-5 h-5 text-white" />
           </div>
           <span className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-            PayPing
+            RemindSwift
           </span>
         </Link>
 
@@ -110,18 +110,28 @@ const Header = () => {
           </Link>
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden p-2 rounded-lg hover:bg-muted/50 transition-colors"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          {isMenuOpen ? (
-            <X className="h-6 w-6" />
-          ) : (
-            <Menu className="h-6 w-6" />
-          )}
-        </button>
+        {/* Mobile Auth + Menu */}
+        <div className="md:hidden flex items-center gap-2">
+          {/* Mobile Login Button - Always visible */}
+          <Link to="/login">
+            <Button size="sm" variant="ghost" className="text-foreground font-medium min-h-[40px]">
+              Login
+            </Button>
+          </Link>
+          
+          {/* Mobile Menu Button */}
+          <button
+            className="p-2 rounded-lg hover:bg-muted/50 transition-colors"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}

@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Bell, LogOut, Settings, Search } from "lucide-react";
+import { Bell, LogOut, Settings, Search, Zap } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,7 +86,7 @@ export function DashboardLayout({ children, title, description }: DashboardLayou
               {/* Logo - mobile only */}
               <div className="md:hidden flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-accent-foreground flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">P</span>
+                  <Zap className="w-4 h-4 text-white" />
                 </div>
               </div>
               

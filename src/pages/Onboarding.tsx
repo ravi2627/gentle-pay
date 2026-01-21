@@ -220,7 +220,7 @@ const Onboarding = () => {
       }
 
       toast({
-        title: "Welcome to PayPing! 🎉",
+        title: "Welcome to RemindSwift! 🎉",
         description: "Your account is set up and ready to go!",
       });
       navigate("/dashboard");
@@ -254,7 +254,7 @@ const Onboarding = () => {
               <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Building2 className="w-8 h-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Let's set up PayPing</CardTitle>
+              <CardTitle className="text-2xl">Let's set up RemindSwift</CardTitle>
               <CardDescription className="text-base">
                 Tell us about your business to personalize your experience
               </CardDescription>

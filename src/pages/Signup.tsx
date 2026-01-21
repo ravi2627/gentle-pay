@@ -56,7 +56,7 @@ const Signup = () => {
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold mb-2">Create your account</h1>
               <p className="text-muted-foreground">
-                Start getting paid faster with PayPing
+                Polite reminders. Faster payments.
               </p>
             </div>
 
