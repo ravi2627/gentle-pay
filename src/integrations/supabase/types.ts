@@ -50,6 +50,81 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          failed_at: string | null
+          failure_reason: string | null
+          id: string
+          invoice_id: string
+          open_count: number | null
+          opened_at: string | null
+          recipient_email: string
+          reminder_id: string | null
+          resend_message_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          template_type: string
+          tracking_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          invoice_id: string
+          open_count?: number | null
+          opened_at?: string | null
+          recipient_email: string
+          reminder_id?: string | null
+          resend_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          template_type?: string
+          tracking_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          invoice_id?: string
+          open_count?: number | null
+          opened_at?: string | null
+          recipient_email?: string
+          reminder_id?: string | null
+          resend_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          template_type?: string
+          tracking_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_logs_reminder_id_fkey"
+            columns: ["reminder_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_reminders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_activity_logs: {
         Row: {
           created_at: string
@@ -357,6 +432,69 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_logs: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          failed_at: string | null
+          failure_reason: string | null
+          id: string
+          invoice_id: string
+          message_body: string
+          recipient_phone: string
+          reminder_id: string | null
+          sent_at: string | null
+          status: string
+          twilio_sid: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          invoice_id: string
+          message_body: string
+          recipient_phone: string
+          reminder_id?: string | null
+          sent_at?: string | null
+          status?: string
+          twilio_sid?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          invoice_id?: string
+          message_body?: string
+          recipient_phone?: string
+          reminder_id?: string | null
+          sent_at?: string | null
+          status?: string
+          twilio_sid?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_logs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_logs_reminder_id_fkey"
+            columns: ["reminder_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_reminders"
             referencedColumns: ["id"]
           },
         ]
