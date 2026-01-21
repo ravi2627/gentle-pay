@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Zap } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -27,11 +27,12 @@ const Footer = () => {
         <div className="grid md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link to="/" className="flex items-center space-x-2 mb-4 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-foreground flex items-center justify-center shadow-lg shadow-primary/20">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-foreground">RemindSwift</span>
+            <Link to="/" className="inline-block mb-4">
+              <img 
+                src={logo} 
+                alt="RemindSwift Logo" 
+                className="h-10 w-auto"
+              />
             </Link>
             <p className="text-muted-foreground max-w-sm leading-relaxed">
               Polite reminders. Faster payments. Automated invoice reminders for freelancers and small agencies.
