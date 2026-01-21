@@ -15,6 +15,7 @@ const Footer = () => {
       { label: "Terms of Service", href: "/terms" },
       { label: "Refund Policy", href: "/refund" },
       { label: "Cancellation Policy", href: "/cancellation" },
+      { label: "Disclaimer", href: "/disclaimer" },
     ],
   };
 
