@@ -22,6 +22,7 @@ import Terms from "./pages/Terms";
 import Refund from "./pages/Refund";
 import Cancellation from "./pages/Cancellation";
 import Disclaimer from "./pages/Disclaimer";
+import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/refund" element={<Refund />} />
             <Route path="/cancellation" element={<Cancellation />} />
             <Route path="/disclaimer" element={<Disclaimer />} />
+            <Route path="/contact" element={<Contact />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
