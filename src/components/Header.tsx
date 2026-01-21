@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Zap } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import logo from "@/assets/logo.png";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -35,7 +36,6 @@ const Header = () => {
     if (link.anchor) {
       e.preventDefault();
       
-      // If we're on the homepage, scroll to the section
       if (location.pathname === "/") {
         const element = document.getElementById(link.anchor);
         if (element) {
@@ -43,7 +43,6 @@ const Header = () => {
           window.history.pushState(null, "", `#${link.anchor}`);
         }
       } else {
-        // Navigate to homepage then scroll
         navigate("/");
         setTimeout(() => {
           const element = document.getElementById(link.anchor!);
@@ -68,19 +67,18 @@ const Header = () => {
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="container flex h-20 items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center space-x-2 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-foreground flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/30 transition-shadow">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-            RemindSwift
-          </span>
+      <div className="container flex h-16 md:h-20 items-center justify-between">
+        {/* Logo - Responsive */}
+        <Link to="/" className="flex items-center group flex-shrink-0">
+          <img 
+            src={logo} 
+            alt="RemindSwift Logo" 
+            className="h-8 md:h-10 w-auto object-contain"
+          />
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-1">
+        <nav className="hidden lg:flex items-center space-x-1">
           {navLinks.map((link) => (
             <a
               key={link.href}
@@ -112,10 +110,10 @@ const Header = () => {
         </div>
 
         {/* Mobile Auth + Menu */}
-        <div className="md:hidden flex items-center gap-2">
+        <div className="md:hidden flex items-center gap-1">
           {/* Mobile Login Button - Always visible */}
           <Link to="/login">
-            <Button size="sm" variant="ghost" className="text-foreground font-medium min-h-[40px]">
+            <Button size="sm" variant="ghost" className="text-foreground font-medium min-h-[40px] px-3">
               Login
             </Button>
           </Link>
@@ -139,7 +137,7 @@ const Header = () => {
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div 
-            className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg"
+            className="lg:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
