@@ -46,15 +46,13 @@ export const useSendRealReminder = () => {
         finalPaymentLink = defaultLink?.url || "#";
       }
 
-      // TESTING MODE: Resend only allows sending to the account owner's email
-      // without a verified domain. Using the authenticated user's email.
-      const testingEmail = user.email;
-      if (!testingEmail) {
-        throw new Error("No email found for authenticated user");
+      // Production mode: Send to actual client email
+      const recipientEmail = invoice.client_email;
+      if (!recipientEmail) {
+        throw new Error("No client email found for this invoice");
       }
 
-      console.log(`Testing mode: Sending to ${testingEmail} (original: ${invoice.client_email})`);
-      const recipientEmail = testingEmail;
+      console.log(`Sending reminder to client: ${recipientEmail}`);
 
       const response = await supabase.functions.invoke("send-reminder", {
         body: {
