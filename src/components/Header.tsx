@@ -22,7 +22,8 @@ const Header = () => {
     { href: "/", label: "Home", anchor: null },
     { href: "/#pricing", label: "Pricing", anchor: "pricing" },
     { href: "/#how-it-works", label: "How it Works", anchor: "how-it-works" },
-    { href: "/#faq", label: "FAQ", anchor: "faq" },
+    { href: "/about", label: "About", anchor: null },
+    { href: "/contact", label: "Contact", anchor: null },
   ];
 
   const isActive = (path: string) => {
