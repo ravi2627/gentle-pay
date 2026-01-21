@@ -851,6 +851,8 @@ const Dashboard = () => {
               phone: client.phone || null,
             }))}
             currency={currency}
+            currencySymbol={currencySymbol}
+            senderName={displayName}
             isSubmitting={isSubmitting}
             onSubmit={handleCreateInvoiceNew}
             onCancel={() => {
