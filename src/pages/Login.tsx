@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import logo from "@/assets/logo.png";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -44,21 +43,12 @@ const Login = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 flex items-center justify-center py-12 px-4">
-        <div className="w-full max-w-md">
-          <div className="bg-card border border-border rounded-xl p-6 md:p-8">
-            {/* Logo */}
-            <div className="flex justify-center mb-6">
-              <img 
-                src={logo} 
-                alt="RemindSwift Logo" 
-                className="h-10 md:h-12 w-auto"
-              />
-            </div>
-
+      <main className="flex-1 flex items-center justify-center py-12">
+        <div className="w-full max-w-md px-4">
+          <div className="bg-card border border-border rounded-xl p-8">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold mb-2">Welcome back</h1>
-              <p className="text-muted-foreground text-sm md:text-base">
+              <p className="text-muted-foreground">
                 Log in to your RemindSwift account
               </p>
             </div>
@@ -73,7 +63,6 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="min-h-[44px]"
                 />
               </div>
 
@@ -94,11 +83,10 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="min-h-[44px]"
                 />
               </div>
 
-              <Button type="submit" className="w-full min-h-[44px]" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Logging in..." : "Log in"}
               </Button>
             </form>

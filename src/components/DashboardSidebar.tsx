@@ -23,9 +23,9 @@ import {
   CreditCard,
   LogOut,
   HelpCircle,
+  Zap,
   BarChart3,
 } from "lucide-react";
-import logo from "@/assets/logo.png";
 
 const mainNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -57,11 +57,14 @@ export function DashboardSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border bg-background">
       <SidebarHeader className="border-b border-border p-4">
         <div className="flex items-center gap-3">
-          <img 
-            src={logo} 
-            alt="RemindSwift Logo" 
-            className={`${collapsed ? "h-8 w-8 object-contain object-left" : "h-8 w-auto"} transition-all`}
-          />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent-foreground flex items-center justify-center shadow-lg shadow-primary/20">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+          {!collapsed && (
+            <div className="flex flex-col">
+              <span className="font-bold text-base">RemindSwift</span>
+            </div>
+          )}
         </div>
       </SidebarHeader>
 
