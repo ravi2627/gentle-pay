@@ -50,12 +50,42 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_activity_logs: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          invoice_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          invoice_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          invoice_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       invoice_reminders: {
         Row: {
           channel: string
           created_at: string
+          failure_reason: string | null
           id: string
           invoice_id: string
+          open_count: number | null
+          opened_at: string | null
           scheduled_for: string | null
           sent_at: string | null
           sort_order: number
@@ -63,14 +93,18 @@ export type Database = {
           timing_days: number
           timing_type: string
           tone: string
+          tracking_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           channel: string
           created_at?: string
+          failure_reason?: string | null
           id?: string
           invoice_id: string
+          open_count?: number | null
+          opened_at?: string | null
           scheduled_for?: string | null
           sent_at?: string | null
           sort_order?: number
@@ -78,14 +112,18 @@ export type Database = {
           timing_days?: number
           timing_type: string
           tone: string
+          tracking_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           channel?: string
           created_at?: string
+          failure_reason?: string | null
           id?: string
           invoice_id?: string
+          open_count?: number | null
+          opened_at?: string | null
           scheduled_for?: string | null
           sent_at?: string | null
           sort_order?: number
@@ -93,10 +131,18 @@ export type Database = {
           timing_days?: number
           timing_type?: string
           tone?: string
+          tracking_id?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_invoice_reminders_invoice"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoice_reminders_invoice_id_fkey"
             columns: ["invoice_id"]

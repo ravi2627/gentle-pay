@@ -32,6 +32,8 @@ import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { EmailTrackingCards } from "@/components/dashboard/EmailTrackingCards";
 import { EmailStatusIndicator } from "@/components/dashboard/EmailStatusIndicator";
 import { InvoiceActivityTimeline, reminderLogsToActivities } from "@/components/dashboard/InvoiceActivityTimeline";
+import { EditInvoiceModal, EditInvoiceData } from "@/components/dashboard/EditInvoiceModal";
+import { InvoiceDetailSheet } from "@/components/dashboard/InvoiceDetailSheet";
 import { SwipeToDelete } from "@/components/SwipeToDelete";
 import { useEmailTracking } from "@/hooks/useEmailTracking";
 import { useInvoices, InvoiceWithClient } from "@/hooks/useInvoices";
@@ -187,7 +189,10 @@ const Dashboard = () => {
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [isPaymentLinksDialogOpen, setIsPaymentLinksDialogOpen] = useState(false);
   const [isActivitySheetOpen, setIsActivitySheetOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDetailSheetOpen, setIsDetailSheetOpen] = useState(false);
   const [selectedActivityInvoice, setSelectedActivityInvoice] = useState<LocalInvoice | null>(null);
+  const [selectedDbInvoice, setSelectedDbInvoice] = useState<InvoiceWithClient | null>(null);
   const [isAddingLink, setIsAddingLink] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
@@ -438,18 +443,19 @@ const Dashboard = () => {
   };
 
   const openEditDialog = (invoice: LocalInvoice) => {
-    setSelectedInvoice(invoice);
-    setSelectedDbInvoiceId(invoice.id);
-    // Find the DB invoice to get the correct date format
     const dbInv = dbInvoices.find(i => i.id === invoice.id);
-    const formattedDate = dbInv ? dbInv.due_date : new Date().toISOString().split("T")[0];
-    setEditFormData({
-      client: invoice.client,
-      amount: String(invoice.amount),
-      dueDate: formattedDate,
-      status: invoice.status,
-    });
-    setIsEditDialogOpen(true);
+    if (dbInv) {
+      setSelectedDbInvoice(dbInv);
+      setIsEditModalOpen(true);
+    }
+  };
+
+  const openDetailSheet = (invoice: LocalInvoice) => {
+    const dbInv = dbInvoices.find(i => i.id === invoice.id);
+    if (dbInv) {
+      setSelectedDbInvoice(dbInv);
+      setIsDetailSheetOpen(true);
+    }
   };
 
   const openDeleteDialog = (invoice: LocalInvoice) => {
@@ -504,8 +510,28 @@ const Dashboard = () => {
   };
 
   const openActivitySheet = (invoice: LocalInvoice) => {
-    setSelectedActivityInvoice(invoice);
-    setIsActivitySheetOpen(true);
+    openDetailSheet(invoice);
+  };
+
+  // Handle edit invoice save
+  const handleEditInvoiceSave = async (data: EditInvoiceData) => {
+    setIsSubmitting(true);
+    
+    updateInvoice.mutate({
+      id: data.id,
+      amount: data.amount,
+      due_date: data.dueDate,
+      status: data.status,
+    }, {
+      onSuccess: () => {
+        setIsSubmitting(false);
+        setIsEditModalOpen(false);
+        setSelectedDbInvoice(null);
+      },
+      onError: () => {
+        setIsSubmitting(false);
+      }
+    });
   };
 
   return (
@@ -1195,13 +1221,6 @@ const Dashboard = () => {
                   <span className="text-sm text-muted-foreground">Status</span>
                   {getStatusBadge(selectedActivityInvoice.status)}
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Email Status</span>
-                  <EmailStatusIndicator 
-                    emailStatus={getInvoiceEmailStatus(selectedActivityInvoice.id)} 
-                    size="sm" 
-                  />
-                </div>
               </div>
 
               {/* Activity Timeline */}
@@ -1211,36 +1230,62 @@ const Dashboard = () => {
                   activities={reminderLogsToActivities(getInvoiceLogs(selectedActivityInvoice.id))}
                 />
               </div>
-
-              {/* Actions */}
-              {selectedActivityInvoice.status !== "paid" && (
-                <div className="pt-4 border-t space-y-2">
-                  <Button 
-                    className="w-full"
-                    onClick={() => {
-                      handleSendSingleReminder(selectedActivityInvoice.id);
-                    }}
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    Send Reminder
-                    {shouldEscalateToSMS(selectedActivityInvoice.id) && (
-                      <Badge variant="secondary" className="ml-2">Try SMS</Badge>
-                    )}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => handleMarkPaid(selectedActivityInvoice.id)}
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Mark as Paid
-                  </Button>
-                </div>
-              )}
             </div>
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Edit Invoice Modal */}
+      <EditInvoiceModal
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        invoice={selectedDbInvoice}
+        paymentLinks={dbPaymentLinks.map((link) => ({
+          id: link.id,
+          label: link.label,
+          url: link.url,
+          isDefault: link.is_default,
+        }))}
+        clients={(clients || []).map((client) => ({
+          id: client.id,
+          name: client.name,
+          email: client.email || null,
+          phone: client.phone || null,
+        }))}
+        reminders={[]}
+        currency={currency}
+        currencySymbol={currencySymbol}
+        senderName={displayName}
+        isSubmitting={isSubmitting}
+        onSave={handleEditInvoiceSave}
+        onCancel={() => {
+          setIsEditModalOpen(false);
+          setSelectedDbInvoice(null);
+        }}
+      />
+
+      {/* Invoice Detail Sheet */}
+      <InvoiceDetailSheet
+        open={isDetailSheetOpen}
+        onOpenChange={setIsDetailSheetOpen}
+        invoice={selectedDbInvoice}
+        currencySymbol={currencySymbol}
+        onEdit={() => {
+          setIsDetailSheetOpen(false);
+          setIsEditModalOpen(true);
+        }}
+        onMarkPaid={() => {
+          if (selectedDbInvoice) {
+            handleMarkPaid(selectedDbInvoice.id);
+            setIsDetailSheetOpen(false);
+          }
+        }}
+        onSendReminder={() => {
+          if (selectedDbInvoice) {
+            handleSendSingleReminder(selectedDbInvoice.id);
+          }
+        }}
+      />
     </DashboardLayout>
   );
 };

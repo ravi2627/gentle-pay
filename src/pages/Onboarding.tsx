@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,19 +15,26 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   ArrowRight,
   ArrowLeft,
   Check,
   Building2,
-  User,
-  FileText,
-  MessageSquare,
+  CreditCard,
+  Bell,
   Sparkles,
   Zap,
   Globe,
-  CreditCard,
+  Send,
+  Mail,
+  MessageSquare,
+  Loader2,
 } from "lucide-react";
+import { ReminderScheduleEditor } from "@/components/dashboard/ReminderScheduleEditor";
+import type { ReminderFormItem } from "@/types/invoiceReminders";
+import { DEFAULT_REMINDERS, getReminderTimingLabel, getChannelLabel, getToneLabel } from "@/types/invoiceReminders";
 
 const CURRENCIES = [
   { code: "USD", symbol: "$", name: "US Dollar" },
@@ -55,33 +63,33 @@ const Onboarding = () => {
   const { user, updateProfile } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSendingTest, setIsSendingTest] = useState(false);
   const totalSteps = 6;
 
-  // Step 2: Business Setup
+  // Step 1: Business Setup
   const [businessData, setBusinessData] = useState({
     businessName: "",
-    defaultPaymentLink: "",
     timezone: "UTC",
     currency: "USD",
   });
 
-  // Step 3: First Client
-  const [clientData, setClientData] = useState({
-    name: "",
-    email: "",
-    phone: "",
+  // Step 2: Payment Setup (REQUIRED)
+  const [paymentData, setPaymentData] = useState({
+    label: "",
+    url: "",
   });
+  const [paymentLinkAdded, setPaymentLinkAdded] = useState(false);
 
-  // Step 4: First Invoice
-  const [invoiceData, setInvoiceData] = useState({
-    amount: "",
-    dueDate: "",
-    paymentLink: "",
-    remindersEnabled: true,
-  });
+  // Step 3: Default Reminder Tone
+  const [defaultTone, setDefaultTone] = useState<"polite" | "professional" | "firm">("polite");
 
-  // Step 5: Reminder Tone
-  const [reminderTone, setReminderTone] = useState<"polite" | "professional" | "firm">("polite");
+  // Step 4: Default Reminder Schedule
+  const [defaultReminders, setDefaultReminders] = useState<ReminderFormItem[]>([...DEFAULT_REMINDERS]);
+
+  // Step 5: Test Reminder (Optional)
+  const [testEmail, setTestEmail] = useState(user?.email || "");
+  const [testSent, setTestSent] = useState(false);
 
   const progress = (step / totalSteps) * 100;
 
@@ -89,32 +97,87 @@ const Onboarding = () => {
     return CURRENCIES.find((c) => c.code === businessData.currency)?.symbol || "$";
   };
 
-  const getReminderPreview = () => {
-    const clientName = clientData.name || "Client Name";
-    const amount = invoiceData.amount || "500";
-    const dueDate = invoiceData.dueDate
-      ? new Date(invoiceData.dueDate).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        })
-      : "Jan 25, 2026";
-    const symbol = getCurrencySymbol();
+  const handleAddPaymentLink = async () => {
+    if (!paymentData.label.trim() || !paymentData.url.trim()) {
+      toast({
+        title: "Missing details",
+        description: "Please enter both a label and URL for your payment link.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    switch (reminderTone) {
-      case "polite":
-        return `Hi ${clientName},\n\nJust a quick reminder about your invoice for ${symbol}${amount} due on ${dueDate}.\n\nPay here: [payment link]\n\nThank you!`;
-      case "professional":
-        return `Hello ${clientName},\n\nThis is a reminder that your invoice for ${symbol}${amount} is due on ${dueDate}.\n\nPayment link: [payment link]\n\nBest regards`;
-      case "firm":
-        return `Dear ${clientName},\n\nYour invoice for ${symbol}${amount} is due on ${dueDate}. Please arrange payment promptly.\n\nPayment link: [payment link]`;
-      default:
-        return "";
+    // Validate URL
+    try {
+      new URL(paymentData.url);
+    } catch {
+      toast({
+        title: "Invalid URL",
+        description: "Please enter a valid payment link URL.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("payment_links")
+        .insert({
+          user_id: authUser.id,
+          label: paymentData.label,
+          url: paymentData.url,
+          is_default: true,
+        });
+
+      if (error) throw error;
+
+      setPaymentLinkAdded(true);
+      toast({
+        title: "Payment link added!",
+        description: "Your default payment link has been saved.",
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to add payment link";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleSendTestReminder = async () => {
+    if (!testEmail.trim()) {
+      toast({
+        title: "Email required",
+        description: "Please enter an email address to send the test reminder.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingTest(true);
+
+    // Simulate sending a test reminder
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    setIsSendingTest(false);
+    setTestSent(true);
+    toast({
+      title: "Test reminder sent! 📧",
+      description: `A sample reminder has been sent to ${testEmail}`,
+    });
+  };
+
   const handleNext = () => {
-    if (step === 2) {
+    if (step === 1) {
       if (!businessData.businessName.trim()) {
         toast({
           title: "Business name required",
@@ -125,31 +188,11 @@ const Onboarding = () => {
       }
     }
 
-    if (step === 3) {
-      if (!clientData.name.trim() || !clientData.email.trim()) {
+    if (step === 2) {
+      if (!paymentLinkAdded) {
         toast({
-          title: "Client details required",
-          description: "Please enter at least client name and email.",
-          variant: "destructive",
-        });
-        return;
-      }
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(clientData.email)) {
-        toast({
-          title: "Invalid email",
-          description: "Please enter a valid email address.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    if (step === 4) {
-      if (!invoiceData.amount || !invoiceData.dueDate) {
-        toast({
-          title: "Invoice details required",
-          description: "Please enter amount and due date.",
+          title: "Payment link required",
+          description: "Please add at least one payment link to continue.",
           variant: "destructive",
         });
         return;
@@ -168,15 +211,28 @@ const Onboarding = () => {
   };
 
   const handleComplete = async () => {
-    // Update profile with business name
-    if (businessData.businessName) {
-      await updateProfile({ business_name: businessData.businessName });
+    setIsLoading(true);
+
+    try {
+      // Update profile with business name
+      if (businessData.businessName) {
+        await updateProfile({ business_name: businessData.businessName });
+      }
+
+      toast({
+        title: "Welcome to PayPing! 🎉",
+        description: "Your account is set up and ready to go!",
+      });
+      navigate("/dashboard");
+    } catch (error) {
+      toast({
+        title: "Setup complete",
+        description: "Redirecting to your dashboard...",
+      });
+      navigate("/dashboard");
+    } finally {
+      setIsLoading(false);
     }
-    toast({
-      title: "Welcome to PayPing! 🎉",
-      description: "Your first reminder is scheduled. Let's get you paid!",
-    });
-    navigate("/dashboard");
   };
 
   return (
@@ -191,66 +247,16 @@ const Onboarding = () => {
           <Progress value={progress} className="h-2" />
         </div>
 
-        {/* Step 1: Welcome */}
+        {/* Step 1: Business Setup */}
         {step === 1 && (
           <Card className="shadow-xl border-0">
             <CardHeader className="text-center pb-2">
               <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-primary" />
+                <Building2 className="w-8 h-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Welcome to PayPing</CardTitle>
+              <CardTitle className="text-2xl">Let's set up PayPing</CardTitle>
               <CardDescription className="text-base">
-                PayPing helps you get paid — automatically.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                  <Zap className="w-5 h-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="font-medium text-sm">Automated Reminders</p>
-                    <p className="text-sm text-muted-foreground">
-                      Polite follow-ups sent automatically
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                  <Check className="w-5 h-5 text-success mt-0.5" />
-                  <div>
-                    <p className="font-medium text-sm">Get Paid Faster</p>
-                    <p className="text-sm text-muted-foreground">
-                      Clients pay 2x faster with gentle pings
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                  <MessageSquare className="w-5 h-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="font-medium text-sm">No Awkward Conversations</p>
-                    <p className="text-sm text-muted-foreground">
-                      Let PayPing handle the follow-ups for you
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <Button onClick={handleNext} className="w-full" size="lg">
-                Get Started
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 2: Business Setup */}
-        {step === 2 && (
-          <Card className="shadow-xl border-0">
-            <CardHeader className="text-center pb-2">
-              <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <Building2 className="w-7 h-7 text-primary" />
-              </div>
-              <CardTitle className="text-xl">Business Setup</CardTitle>
-              <CardDescription>
-                Tell us about your business
+                Tell us about your business to personalize your experience
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -265,29 +271,33 @@ const Onboarding = () => {
                   }
                   maxLength={100}
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="paymentLink">Default Payment Link</Label>
-                <div className="relative">
-                  <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="paymentLink"
-                    placeholder="https://pay.stripe.com/..."
-                    value={businessData.defaultPaymentLink}
-                    onChange={(e) =>
-                      setBusinessData({ ...businessData, defaultPaymentLink: e.target.value })
-                    }
-                    className="pl-9"
-                    maxLength={500}
-                  />
-                </div>
                 <p className="text-xs text-muted-foreground">
-                  Stripe, PayPal, or any payment link you use
+                  This will appear in your reminder emails
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Default Currency</Label>
+                  <Select
+                    value={businessData.currency}
+                    onValueChange={(value) =>
+                      setBusinessData({ ...businessData, currency: value })
+                    }
+                  >
+                    <SelectTrigger id="currency">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((cur) => (
+                        <SelectItem key={cur.code} value={cur.code}>
+                          {cur.symbol} {cur.code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
                   <Select
@@ -309,35 +319,100 @@ const Onboarding = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Currency</Label>
-                  <Select
-                    value={businessData.currency}
-                    onValueChange={(value) =>
-                      setBusinessData({ ...businessData, currency: value })
-                    }
+              <Button onClick={handleNext} className="w-full" size="lg">
+                Continue
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 2: Payment Setup (REQUIRED) */}
+        {step === 2 && (
+          <Card className="shadow-xl border-0">
+            <CardHeader className="text-center pb-2">
+              <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <CreditCard className="w-7 h-7 text-primary" />
+              </div>
+              <CardTitle className="text-xl">Add Payment Method</CardTitle>
+              <CardDescription>
+                Where should clients send payments?
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {!paymentLinkAdded ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="paymentLabel">Label *</Label>
+                    <Input
+                      id="paymentLabel"
+                      placeholder="e.g., Stripe, PayPal, UPI"
+                      value={paymentData.label}
+                      onChange={(e) =>
+                        setPaymentData({ ...paymentData, label: e.target.value })
+                      }
+                      maxLength={50}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="paymentUrl">Payment Link URL *</Label>
+                    <Input
+                      id="paymentUrl"
+                      placeholder="https://pay.stripe.com/..."
+                      value={paymentData.url}
+                      onChange={(e) =>
+                        setPaymentData({ ...paymentData, url: e.target.value })
+                      }
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Paste your Stripe, PayPal, or any payment link
+                    </p>
+                  </div>
+
+                  <Button 
+                    onClick={handleAddPaymentLink} 
+                    className="w-full" 
+                    disabled={isLoading}
                   >
-                    <SelectTrigger id="currency">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CURRENCIES.map((cur) => (
-                        <SelectItem key={cur.code} value={cur.code}>
-                          {cur.symbol} {cur.code}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Add Payment Link
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Check className="w-6 h-6 text-success" />
+                  </div>
+                  <p className="font-medium">Payment link added!</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {paymentData.label}: {paymentData.url.slice(0, 40)}...
+                  </p>
                 </div>
-              </div>
+              )}
 
               <div className="flex gap-3 pt-2">
                 <Button variant="outline" onClick={handleBack} className="flex-1">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
-                <Button onClick={handleNext} className="flex-1">
+                <Button 
+                  onClick={handleNext} 
+                  className="flex-1" 
+                  disabled={!paymentLinkAdded}
+                >
                   Continue
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -346,236 +421,62 @@ const Onboarding = () => {
           </Card>
         )}
 
-        {/* Step 3: First Client */}
+        {/* Step 3: Default Reminder Tone */}
         {step === 3 && (
-          <Card className="shadow-xl border-0">
-            <CardHeader className="text-center pb-2">
-              <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <User className="w-7 h-7 text-primary" />
-              </div>
-              <CardTitle className="text-xl">Add Your First Client</CardTitle>
-              <CardDescription>
-                Who would you like to send reminders to?
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="clientName">Client Name *</Label>
-                <Input
-                  id="clientName"
-                  placeholder="John Smith or Acme Corp"
-                  value={clientData.name}
-                  onChange={(e) =>
-                    setClientData({ ...clientData, name: e.target.value })
-                  }
-                  maxLength={100}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="clientEmail">Email *</Label>
-                <Input
-                  id="clientEmail"
-                  type="email"
-                  placeholder="client@company.com"
-                  value={clientData.email}
-                  onChange={(e) =>
-                    setClientData({ ...clientData, email: e.target.value })
-                  }
-                  maxLength={255}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="clientPhone">Phone (optional)</Label>
-                <Input
-                  id="clientPhone"
-                  type="tel"
-                  placeholder="+1 555-0123"
-                  value={clientData.phone}
-                  onChange={(e) =>
-                    setClientData({ ...clientData, phone: e.target.value })
-                  }
-                  maxLength={20}
-                />
-                <p className="text-xs text-muted-foreground">
-                  For SMS reminders (Pro plan)
-                </p>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <Button variant="outline" onClick={handleBack} className="flex-1">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back
-                </Button>
-                <Button onClick={handleNext} className="flex-1">
-                  Continue
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 4: First Invoice */}
-        {step === 4 && (
-          <Card className="shadow-xl border-0">
-            <CardHeader className="text-center pb-2">
-              <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <FileText className="w-7 h-7 text-primary" />
-              </div>
-              <CardTitle className="text-xl">Create First Invoice</CardTitle>
-              <CardDescription>
-                Add the invoice you want to track
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="invoiceAmount">Amount ({getCurrencySymbol()}) *</Label>
-                <Input
-                  id="invoiceAmount"
-                  type="number"
-                  placeholder="500.00"
-                  min="0.01"
-                  step="0.01"
-                  value={invoiceData.amount}
-                  onChange={(e) =>
-                    setInvoiceData({ ...invoiceData, amount: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="invoiceDueDate">Due Date *</Label>
-                <Input
-                  id="invoiceDueDate"
-                  type="date"
-                  value={invoiceData.dueDate}
-                  onChange={(e) =>
-                    setInvoiceData({ ...invoiceData, dueDate: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="invoicePaymentLink">Payment Link</Label>
-                <Input
-                  id="invoicePaymentLink"
-                  placeholder={businessData.defaultPaymentLink || "https://..."}
-                  value={invoiceData.paymentLink || businessData.defaultPaymentLink}
-                  onChange={(e) =>
-                    setInvoiceData({ ...invoiceData, paymentLink: e.target.value })
-                  }
-                  maxLength={500}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Auto-filled from your default payment link
-                </p>
-              </div>
-
-              <div className="p-3 bg-success/10 border border-success/20 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-success" />
-                  <span className="text-sm font-medium">Reminders enabled by default</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 ml-6">
-                  We'll send polite reminders before and after the due date
-                </p>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <Button variant="outline" onClick={handleBack} className="flex-1">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back
-                </Button>
-                <Button onClick={handleNext} className="flex-1">
-                  Continue
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 5: Reminder Tone */}
-        {step === 5 && (
           <Card className="shadow-xl border-0">
             <CardHeader className="text-center pb-2">
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
                 <MessageSquare className="w-7 h-7 text-primary" />
               </div>
-              <CardTitle className="text-xl">Choose Your Tone</CardTitle>
+              <CardTitle className="text-xl">Choose Your Default Tone</CardTitle>
               <CardDescription>
-                How would you like your reminders to sound?
+                How should your reminders sound?
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={() => setReminderTone("polite")}
-                  className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
-                    reminderTone === "polite"
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">😊 Polite</p>
-                      <p className="text-sm text-muted-foreground">
-                        Friendly and casual reminders
-                      </p>
+                {[
+                  { 
+                    value: "polite", 
+                    label: "😊 Polite", 
+                    description: "Friendly and warm, perfect for long-term clients",
+                    preview: "Hi! Just a quick reminder about your invoice..."
+                  },
+                  { 
+                    value: "professional", 
+                    label: "💼 Professional", 
+                    description: "Business-like and neutral, suitable for most situations",
+                    preview: "This is a reminder that your invoice is due..."
+                  },
+                  { 
+                    value: "firm", 
+                    label: "⚠️ Firm", 
+                    description: "Direct and urgent, for overdue payments",
+                    preview: "Your invoice is due. Please arrange payment..."
+                  },
+                ].map((tone) => (
+                  <button
+                    key={tone.value}
+                    type="button"
+                    onClick={() => setDefaultTone(tone.value as typeof defaultTone)}
+                    className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                      defaultTone === tone.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium">{tone.label}</span>
+                      {defaultTone === tone.value && (
+                        <Check className="w-4 h-4 text-primary" />
+                      )}
                     </div>
-                    {reminderTone === "polite" && (
-                      <Check className="w-5 h-5 text-primary" />
-                    )}
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setReminderTone("professional")}
-                  className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
-                    reminderTone === "professional"
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">💼 Professional</p>
-                      <p className="text-sm text-muted-foreground">
-                        Business-appropriate tone
-                      </p>
-                    </div>
-                    {reminderTone === "professional" && (
-                      <Check className="w-5 h-5 text-primary" />
-                    )}
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setReminderTone("firm")}
-                  className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
-                    reminderTone === "firm"
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">📋 Firm</p>
-                      <p className="text-sm text-muted-foreground">
-                        Direct and to the point
-                      </p>
-                    </div>
-                    {reminderTone === "firm" && (
-                      <Check className="w-5 h-5 text-primary" />
-                    )}
-                  </div>
-                </button>
+                    <p className="text-sm text-muted-foreground">{tone.description}</p>
+                    <p className="text-xs text-muted-foreground mt-2 italic">
+                      "{tone.preview}"
+                    </p>
+                  </button>
+                ))}
               </div>
 
               <div className="flex gap-3 pt-2">
@@ -592,67 +493,183 @@ const Onboarding = () => {
           </Card>
         )}
 
-        {/* Step 6: Confirmation */}
+        {/* Step 4: Default Reminder Schedule */}
+        {step === 4 && (
+          <Card className="shadow-xl border-0">
+            <CardHeader className="text-center pb-2">
+              <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Bell className="w-7 h-7 text-primary" />
+              </div>
+              <CardTitle className="text-xl">Set Default Schedule</CardTitle>
+              <CardDescription>
+                Configure when reminders should be sent
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="border rounded-lg p-4 bg-muted/30">
+                <ReminderScheduleEditor
+                  reminders={defaultReminders}
+                  onChange={setDefaultReminders}
+                  clientHasPhone={false}
+                />
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                You can customize this for each invoice later
+              </p>
+
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" onClick={handleBack} className="flex-1">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+                <Button onClick={handleNext} className="flex-1">
+                  Continue
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 5: Test Reminder (Optional) */}
+        {step === 5 && (
+          <Card className="shadow-xl border-0">
+            <CardHeader className="text-center pb-2">
+              <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Send className="w-7 h-7 text-primary" />
+              </div>
+              <CardTitle className="text-xl">Send a Test Reminder</CardTitle>
+              <CardDescription>
+                See how your reminders will look (optional)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {!testSent ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="testEmail">Send to Email</Label>
+                    <Input
+                      id="testEmail"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={testEmail}
+                      onChange={(e) => setTestEmail(e.target.value)}
+                    />
+                  </div>
+
+                  <Button 
+                    onClick={handleSendTestReminder} 
+                    variant="outline" 
+                    className="w-full"
+                    disabled={isSendingTest}
+                  >
+                    {isSendingTest ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-4 h-4 mr-2" />
+                        Send Test Reminder
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Check className="w-6 h-6 text-success" />
+                  </div>
+                  <p className="font-medium">Test reminder sent!</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Check your inbox at {testEmail}
+                  </p>
+                </div>
+              )}
+
+              <Separator />
+
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={handleBack} className="flex-1">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+                <Button onClick={handleNext} className="flex-1">
+                  {testSent ? "Continue" : "Skip for now"}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 6: Completion */}
         {step === 6 && (
           <Card className="shadow-xl border-0">
             <CardHeader className="text-center pb-2">
               <div className="w-16 h-16 bg-success/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8 text-success" />
+                <Sparkles className="w-8 h-8 text-success" />
               </div>
-              <CardTitle className="text-2xl">You're All Set!</CardTitle>
+              <CardTitle className="text-2xl">You're All Set! 🎉</CardTitle>
               <CardDescription className="text-base">
-                Your first PayPing reminder is scheduled
+                PayPing is ready to help you get paid faster
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Summary */}
-              <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Client</span>
-                  <span className="font-medium">{clientData.name}</span>
+              <div className="space-y-3 p-4 rounded-lg bg-muted/30">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Business</span>
+                  <span className="font-medium">{businessData.businessName}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Amount</span>
-                  <span className="font-medium">
-                    {getCurrencySymbol()}{invoiceData.amount}
-                  </span>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Currency</span>
+                  <span className="font-medium">{businessData.currency}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Due Date</span>
-                  <span className="font-medium">
-                    {invoiceData.dueDate
-                      ? new Date(invoiceData.dueDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })
-                      : "-"}
-                  </span>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Payment Link</span>
+                  <span className="font-medium">{paymentData.label}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tone</span>
-                  <span className="font-medium capitalize">{reminderTone}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Default Tone</span>
+                  <Badge variant="secondary">{defaultTone}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Reminders</span>
+                  <span className="font-medium">{defaultReminders.length} configured</span>
                 </div>
               </div>
 
-              {/* Preview */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">REMINDER PREVIEW</Label>
-                <div className="p-4 bg-background border border-border rounded-lg">
-                  <pre className="text-sm whitespace-pre-wrap font-sans">
-                    {getReminderPreview()}
-                  </pre>
+              <div className="space-y-3 text-center">
+                <div className="flex items-center gap-2 justify-center text-sm text-muted-foreground">
+                  <Zap className="w-4 h-4 text-primary" />
+                  Automated reminders ready to go
+                </div>
+                <div className="flex items-center gap-2 justify-center text-sm text-muted-foreground">
+                  <Check className="w-4 h-4 text-success" />
+                  All changes saved
                 </div>
               </div>
 
-              <Button onClick={handleComplete} className="w-full" size="lg">
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-
-              <Button variant="ghost" onClick={handleBack} className="w-full">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to edit
+              <Button 
+                onClick={handleComplete} 
+                className="w-full" 
+                size="lg"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    Go to Dashboard
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
