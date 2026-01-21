@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
+import { PasswordStrengthMeter, getPasswordStrength } from "@/components/PasswordStrengthMeter";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Check } from "lucide-react";
@@ -23,8 +26,21 @@ const Signup = () => {
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
+  const passwordStrength = getPasswordStrength(password);
+  const isPasswordValid = passwordStrength.score >= 2;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isPasswordValid) {
+      toast({
+        title: "Password too weak",
+        description: "Please choose a stronger password with at least 8 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     const { error } = await signUp(email, password);
@@ -49,6 +65,10 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>Sign Up | RemindSwift</title>
+        <meta name="description" content="Create your free RemindSwift account and start automating invoice reminders." />
+      </Helmet>
       <Header />
       <main className="flex-1 flex items-center justify-center py-12">
         <div className="w-full max-w-md px-4">
@@ -70,28 +90,38 @@ const Signup = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="email"
+                  className="h-11"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={8}
+                  autoComplete="new-password"
+                  className="h-11"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Must be at least 8 characters
-                </p>
+                <PasswordStrengthMeter password={password} />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button 
+                type="submit" 
+                className="w-full h-11" 
+                disabled={isLoading || !isPasswordValid}
+              >
                 {isLoading ? "Creating account..." : "Create account"}
               </Button>
+              
+              {!isPasswordValid && password.length > 0 && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Password must be at least Medium strength to continue
+                </p>
+              )}
             </form>
 
             {/* Benefits */}
@@ -101,7 +131,7 @@ const Signup = () => {
                   key={index}
                   className="flex items-center gap-2 text-sm text-muted-foreground"
                 >
-                  <Check className="w-4 h-4 text-success flex-shrink-0" />
+                  <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                   {benefit}
                 </li>
               ))}
