@@ -9,6 +9,7 @@ const Footer = () => {
       { label: "Pricing", href: "/pricing" },
       { label: "How it Works", href: "/how-it-works" },
       { label: "FAQ", href: "/faq" },
+      { label: "Contact", href: "/contact" },
     ],
     legal: [
       { label: "Privacy Policy", href: "/privacy" },
