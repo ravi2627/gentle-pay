@@ -43,6 +43,7 @@ import { usePaymentLinks } from "@/hooks/usePaymentLinks";
 import { useInvoiceReminders } from "@/hooks/useInvoiceReminders";
 import { CreateInvoiceForm, CreateInvoiceFormData } from "@/components/dashboard/CreateInvoiceForm";
 import { useSendRealReminder } from "@/hooks/useSendRealReminder";
+import ContactMessages from "@/components/dashboard/ContactMessages";
 import { PaymentLinksManager, PaymentLinkWithStats } from "@/components/dashboard/PaymentLinksManager";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -597,6 +598,7 @@ const Dashboard = () => {
           <TabsTrigger value="overview" className="flex-1 md:flex-none">Overview</TabsTrigger>
           <TabsTrigger value="invoices" className="flex-1 md:flex-none">Invoices</TabsTrigger>
           <TabsTrigger value="analytics" className="flex-1 md:flex-none">Analytics</TabsTrigger>
+          <TabsTrigger value="messages" className="flex-1 md:flex-none">Messages</TabsTrigger>
           <TabsTrigger value="team" className="flex-1 md:flex-none">Team</TabsTrigger>
         </TabsList>
 
@@ -840,6 +842,11 @@ const Dashboard = () => {
           </Card>
           
           <DashboardCharts currencySymbol={currencySymbol} />
+        </TabsContent>
+
+        {/* Messages Tab */}
+        <TabsContent value="messages">
+          <ContactMessages />
         </TabsContent>
 
         {/* Team Tab */}
