@@ -42,6 +42,7 @@ import { useReminders } from "@/hooks/useReminders";
 import { usePaymentLinks } from "@/hooks/usePaymentLinks";
 import { useInvoiceReminders } from "@/hooks/useInvoiceReminders";
 import { CreateInvoiceForm, CreateInvoiceFormData } from "@/components/dashboard/CreateInvoiceForm";
+import { useSendRealReminder } from "@/hooks/useSendRealReminder";
 import { PaymentLinksManager, PaymentLinkWithStats } from "@/components/dashboard/PaymentLinksManager";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -113,22 +114,8 @@ const CURRENCIES = [
   { code: "CAD", symbol: "$", name: "Canadian Dollar" },
 ];
 
-const initialPaymentLinks: PaymentLink[] = [
-  {
-    id: "PL-001",
-    name: "Stripe Invoice Link",
-    url: "https://invoice.stripe.com/i/acct_1234",
-    description: "Main payment link for invoices",
-    createdAt: "Jan 10, 2026",
-  },
-  {
-    id: "PL-002",
-    name: "PayPal.me Link",
-    url: "https://paypal.me/yourname",
-    description: "Alternative PayPal payment option",
-    createdAt: "Jan 5, 2026",
-  },
-];
+// Payment links are now fetched from database only
+// No static demo data
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
@@ -160,6 +147,9 @@ const Dashboard = () => {
   // Email tracking hook (for legacy compatibility)
   const { stats: emailStats, getInvoiceEmailStatus, getInvoiceLogs, sendReminder, shouldEscalateToSMS } = useEmailTracking();
 
+  // Real email sending hook
+  const { sendReminder: sendRealReminder, isPending: isSendingReminder } = useSendRealReminder();
+
   // User preferences
   const [currency, setCurrency] = useState("INR");
   const [plan] = useState<"free" | "pro" | "agency">("pro");
@@ -182,7 +172,7 @@ const Dashboard = () => {
     }));
   }, [dbInvoices]);
 
-  const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>(initialPaymentLinks);
+  const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -497,15 +487,29 @@ const Dashboard = () => {
   };
 
   const handleSendSingleReminder = (invoiceId: string) => {
-    const invoice = invoices.find((inv) => inv.id === invoiceId);
-    if (!invoice) return;
-
-    // Send reminder via Supabase
     const dbInv = dbInvoices.find(i => i.id === invoiceId);
-    sendDbReminder.mutate({
-      invoice_id: invoiceId,
-      type: "email",
-      recipient_email: dbInv?.client_email || undefined,
+    if (!dbInv) {
+      toast({
+        title: "Invoice not found",
+        description: "Could not find the invoice to send a reminder.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!dbInv.client_email) {
+      toast({
+        title: "No email address",
+        description: "This invoice doesn't have a client email address configured.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Send real email via edge function
+    sendRealReminder({
+      invoice: dbInv,
+      tone: (dbInv.reminder_tone as "polite" | "professional" | "firm") || "polite",
     });
   };
 

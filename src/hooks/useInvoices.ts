@@ -21,6 +21,8 @@ export interface InvoiceWithClient extends Invoice {
   client_email: string | null;
   reminders_count: number;
   reminders_opened: number;
+  reminder_tone?: string;
+  payment_link_url?: string;
 }
 
 export interface CreateInvoiceData {
@@ -84,16 +86,17 @@ export const useInvoices = () => {
         .select("invoice_id, status");
 
       // Map invoices with client info and reminder stats
-      const enrichedInvoices = (invoicesData as Invoice[]).map((invoice) => {
+      const enrichedInvoices = (invoicesData as any[]).map((invoice) => {
         const client = clientsData?.find((c) => c.id === invoice.client_id);
         const invoiceReminders = remindersData?.filter((r) => r.invoice_id === invoice.id) || [];
         
         return {
           ...invoice,
-          client_name: client?.name || null,
-          client_email: client?.email || null,
+          client_name: client?.name || invoice.client_email?.split("@")[0] || null,
+          client_email: invoice.client_email || client?.email || null,
           reminders_count: invoiceReminders.length,
           reminders_opened: invoiceReminders.filter((r) => r.status === "opened").length,
+          reminder_tone: invoice.reminder_tone || "polite",
         };
       });
 
