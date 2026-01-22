@@ -1,8 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import {
-  LineChart,
-  Line,
   AreaChart,
   Area,
   PieChart,
@@ -17,53 +15,137 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { useInvoices } from "@/hooks/useInvoices";
+import { useReminders } from "@/hooks/useReminders";
+import { BarChart3, PieChart as PieChartIcon, TrendingUp, Activity } from "lucide-react";
 
 interface DashboardChartsProps {
   currencySymbol: string;
 }
 
-// Simulated data for charts
-const outstandingData = [
-  { date: "Jan 1", amount: 8500 },
-  { date: "Jan 5", amount: 9200 },
-  { date: "Jan 10", amount: 7800 },
-  { date: "Jan 15", amount: 11000 },
-  { date: "Jan 18", amount: 9100 },
-  { date: "Jan 20", amount: 8400 },
-];
-
-const paymentsReceivedData = [
-  { month: "Aug", amount: 8200 },
-  { month: "Sep", amount: 9500 },
-  { month: "Oct", amount: 11200 },
-  { month: "Nov", amount: 10800 },
-  { month: "Dec", amount: 12400 },
-  { month: "Jan", amount: 14200 },
-];
-
-const invoiceStatusData = [
-  { name: "Paid", value: 45, color: "hsl(142, 76%, 36%)" },
-  { name: "Pending", value: 35, color: "hsl(243, 75%, 58%)" },
-  { name: "Overdue", value: 20, color: "hsl(0, 84%, 60%)" },
-];
-
-const reminderEffectivenessData = [
-  { name: "Week 1", emails: 24, paid: 12 },
-  { name: "Week 2", emails: 18, paid: 15 },
-  { name: "Week 3", emails: 32, paid: 22 },
-  { name: "Week 4", emails: 28, paid: 18 },
-];
-
 export const DashboardCharts = ({ currencySymbol }: DashboardChartsProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { invoices, stats } = useInvoices();
+  const { reminders } = useReminders();
+
+  // Calculate real data from database
+  const chartData = useMemo(() => {
+    if (!invoices || invoices.length === 0) {
+      return {
+        outstandingData: [],
+        paymentsReceivedData: [],
+        invoiceStatusData: [],
+        reminderEffectivenessData: [],
+        hasData: false,
+      };
+    }
+
+    // Group invoices by date for outstanding payments trend
+    const now = new Date();
+    const last30Days = Array.from({ length: 6 }, (_, i) => {
+      const date = new Date(now);
+      date.setDate(date.getDate() - (25 - i * 5));
+      return date;
+    });
+
+    const outstandingData = last30Days.map((date) => {
+      const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const outstandingAmount = invoices
+        .filter((inv) => {
+          const invDate = new Date(inv.due_date);
+          return inv.status !== "paid" && invDate <= date;
+        })
+        .reduce((sum, inv) => sum + Number(inv.amount), 0);
+      return { date: dateStr, amount: outstandingAmount };
+    });
+
+    // Monthly payments received
+    const last6Months = Array.from({ length: 6 }, (_, i) => {
+      const date = new Date(now);
+      date.setMonth(date.getMonth() - (5 - i));
+      return date;
+    });
+
+    const paymentsReceivedData = last6Months.map((date) => {
+      const monthStr = date.toLocaleDateString("en-US", { month: "short" });
+      const monthPayments = invoices
+        .filter((inv) => {
+          const invDate = new Date(inv.created_at);
+          return (
+            inv.status === "paid" &&
+            invDate.getMonth() === date.getMonth() &&
+            invDate.getFullYear() === date.getFullYear()
+          );
+        })
+        .reduce((sum, inv) => sum + Number(inv.amount), 0);
+      return { month: monthStr, amount: monthPayments };
+    });
+
+    // Invoice status breakdown
+    const paidCount = invoices.filter((inv) => inv.status === "paid").length;
+    const pendingCount = invoices.filter((inv) => inv.status === "pending" || inv.status === "sent" || inv.status === "viewed").length;
+    const overdueCount = invoices.filter((inv) => inv.status === "overdue").length;
+    const total = paidCount + pendingCount + overdueCount;
+
+    const invoiceStatusData = total > 0 ? [
+      { name: "Paid", value: Math.round((paidCount / total) * 100), color: "hsl(142, 76%, 36%)" },
+      { name: "Pending", value: Math.round((pendingCount / total) * 100), color: "hsl(243, 75%, 58%)" },
+      { name: "Overdue", value: Math.round((overdueCount / total) * 100), color: "hsl(0, 84%, 60%)" },
+    ] : [];
+
+    // Reminder effectiveness (last 4 weeks)
+    const reminderEffectivenessData = Array.from({ length: 4 }, (_, i) => {
+      const weekStart = new Date(now);
+      weekStart.setDate(weekStart.getDate() - (3 - i) * 7 - 7);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
+
+      const weekReminders = (reminders || []).filter((r) => {
+        const sentDate = new Date(r.sent_at);
+        return sentDate >= weekStart && sentDate < weekEnd;
+      }).length;
+
+      const weekPaid = invoices.filter((inv) => {
+        if (inv.status !== "paid") return false;
+        const updateDate = new Date(inv.updated_at);
+        return updateDate >= weekStart && updateDate < weekEnd;
+      }).length;
+
+      return {
+        name: `Week ${i + 1}`,
+        emails: weekReminders,
+        paid: weekPaid,
+      };
+    });
+
+    return {
+      outstandingData,
+      paymentsReceivedData,
+      invoiceStatusData,
+      reminderEffectivenessData,
+      hasData: true,
+    };
+  }, [invoices, reminders]);
+
+  // Empty state component
+  const EmptyChartState = ({ title, icon: Icon }: { title: string; icon: React.ComponentType<{ className?: string }> }) => (
+    <div className="h-full flex flex-col items-center justify-center text-center p-4">
+      <Icon className="w-10 h-10 text-muted-foreground/40 mb-3" />
+      <p className="text-sm text-muted-foreground">No data yet</p>
+      <p className="text-xs text-muted-foreground/60 mt-1">
+        Create invoices to see {title.toLowerCase()}
+      </p>
+    </div>
+  );
 
   const charts = [
     {
       title: "Outstanding Payments",
       subtitle: "Last 30 days",
-      content: (
+      icon: TrendingUp,
+      content: chartData.outstandingData.length > 0 ? (
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={outstandingData}>
+          <AreaChart data={chartData.outstandingData}>
             <defs>
               <linearGradient id="colorOutstanding" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="hsl(243, 75%, 58%)" stopOpacity={0.2} />
@@ -103,14 +185,17 @@ export const DashboardCharts = ({ currencySymbol }: DashboardChartsProps) => {
             />
           </AreaChart>
         </ResponsiveContainer>
+      ) : (
+        <EmptyChartState title="Outstanding Payments" icon={TrendingUp} />
       ),
     },
     {
       title: "Revenue Collected",
       subtitle: "Monthly trend",
-      content: (
+      icon: BarChart3,
+      content: chartData.paymentsReceivedData.some(d => d.amount > 0) ? (
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={paymentsReceivedData}>
+          <AreaChart data={chartData.paymentsReceivedData}>
             <defs>
               <linearGradient id="colorPayments" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.2} />
@@ -150,16 +235,19 @@ export const DashboardCharts = ({ currencySymbol }: DashboardChartsProps) => {
             />
           </AreaChart>
         </ResponsiveContainer>
+      ) : (
+        <EmptyChartState title="Revenue Collected" icon={BarChart3} />
       ),
     },
     {
       title: "Invoice Status",
       subtitle: "Current breakdown",
-      content: (
+      icon: PieChartIcon,
+      content: chartData.invoiceStatusData.length > 0 ? (
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={invoiceStatusData}
+              data={chartData.invoiceStatusData}
               cx="50%"
               cy="50%"
               innerRadius={55}
@@ -168,7 +256,7 @@ export const DashboardCharts = ({ currencySymbol }: DashboardChartsProps) => {
               dataKey="value"
               strokeWidth={0}
             >
-              {invoiceStatusData.map((entry, index) => (
+              {chartData.invoiceStatusData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
@@ -189,14 +277,17 @@ export const DashboardCharts = ({ currencySymbol }: DashboardChartsProps) => {
             />
           </PieChart>
         </ResponsiveContainer>
+      ) : (
+        <EmptyChartState title="Invoice Status" icon={PieChartIcon} />
       ),
     },
     {
       title: "Reminder Performance",
       subtitle: "Emails sent vs payments received",
-      content: (
+      icon: Activity,
+      content: chartData.reminderEffectivenessData.some(d => d.emails > 0 || d.paid > 0) ? (
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={reminderEffectivenessData} barGap={8}>
+          <BarChart data={chartData.reminderEffectivenessData} barGap={8}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis 
               dataKey="name" 
@@ -240,6 +331,8 @@ export const DashboardCharts = ({ currencySymbol }: DashboardChartsProps) => {
             />
           </BarChart>
         </ResponsiveContainer>
+      ) : (
+        <EmptyChartState title="Reminder Performance" icon={Activity} />
       ),
     },
   ];

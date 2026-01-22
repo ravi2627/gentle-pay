@@ -855,14 +855,15 @@ const Dashboard = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Demo Notice */}
-      <div className="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-        <p className="text-sm text-center text-muted-foreground">
-          🎉 <strong>Demo Mode:</strong> This is a preview of the PayPing
-          dashboard. Connect a backend to enable real invoice management and
-          automated reminders.
-        </p>
-      </div>
+      {/* Getting Started Notice - Only show when no data */}
+      {invoices.length === 0 && !invoicesLoading && (
+        <div className="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+          <p className="text-sm text-center text-muted-foreground">
+            👋 <strong>Welcome!</strong> Get started by creating your first invoice 
+            to begin tracking payments and sending reminders.
+          </p>
+        </div>
+      )}
 
       {/* New Invoice Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

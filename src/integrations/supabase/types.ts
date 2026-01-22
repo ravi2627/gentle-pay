@@ -362,6 +362,27 @@ export type Database = {
           },
         ]
       }
+      login_rate_limits: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          ip_address: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          ip_address: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: string
+        }
+        Relationships: []
+      }
       password_reset_attempts: {
         Row: {
           created_at: string
