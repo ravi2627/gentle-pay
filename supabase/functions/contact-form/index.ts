@@ -8,16 +8,73 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Simple in-memory rate limiting (resets on function restart)
-const rateLimitMap = new Map<string, number>();
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const MAX_REQUESTS = 2; // Max 2 requests per minute per IP
+// Rate limiting settings - using persistent database storage
+const RATE_LIMIT_WINDOW_MINUTES = 5; // 5 minute window
+const MAX_REQUESTS_PER_IP = 3; // Max 3 requests per 5 minutes per IP
 
 interface ContactRequest {
   name: string;
   email: string;
   message: string;
   honeypot?: string; // Hidden field - should be empty
+}
+
+/**
+ * Check if the IP is rate limited using persistent database storage
+ * Returns true if rate limited, false otherwise
+ */
+async function isRateLimited(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  clientIP: string
+): Promise<boolean> {
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000);
+  
+  // Count recent requests from this IP
+  const { count, error } = await supabase
+    .from("contact_rate_limits")
+    .select("*", { count: "exact", head: true })
+    .eq("ip_address", clientIP)
+    .gte("created_at", windowStart.toISOString());
+
+  if (error) {
+    console.error("Rate limit check error:", error);
+    // On error, allow the request but log it
+    return false;
+  }
+
+  return (count || 0) >= MAX_REQUESTS_PER_IP;
+}
+
+/**
+ * Log a rate limit entry for the IP
+ */
+async function logRateLimitEntry(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  clientIP: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("contact_rate_limits")
+    .insert([{ ip_address: clientIP }]);
+
+  if (error) {
+    console.error("Failed to log rate limit entry:", error);
+  }
+}
+
+/**
+ * Basic email domain validation - reject common disposable email domains
+ */
+function isDisposableEmail(email: string): boolean {
+  const disposableDomains = [
+    "tempmail.com", "throwaway.email", "guerrillamail.com", "mailinator.com",
+    "10minutemail.com", "temp-mail.org", "fakeinbox.com", "trashmail.com",
+    "yopmail.com", "getnada.com", "dispostable.com", "maildrop.cc"
+  ];
+  
+  const domain = email.split("@")[1]?.toLowerCase();
+  return disposableDomains.includes(domain);
 }
 
 async function sendAutoReplyEmail(to: string, name: string): Promise<boolean> {
@@ -165,22 +222,24 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Initialize Supabase client with service role for rate limiting and inserting
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     // Get client IP for rate limiting
     const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
                      req.headers.get("cf-connecting-ip") || 
                      "unknown";
 
-    // Rate limiting check
-    const now = Date.now();
-    const lastRequest = rateLimitMap.get(clientIP) || 0;
-    if (now - lastRequest < RATE_LIMIT_WINDOW / MAX_REQUESTS) {
-      console.log(`Rate limited: ${clientIP}`);
+    // Persistent rate limiting check
+    if (await isRateLimited(supabase, clientIP)) {
+      console.log(`Rate limited (persistent): ${clientIP}`);
       return new Response(
-        JSON.stringify({ error: "Too many requests. Please wait a moment." }),
+        JSON.stringify({ error: "Too many requests. Please wait a few minutes before trying again." }),
         { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-    rateLimitMap.set(clientIP, now);
 
     // Parse and validate request
     const { name, email, message, honeypot }: ContactRequest = await req.json();
@@ -212,6 +271,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check for disposable email domains
+    if (isDisposableEmail(email)) {
+      return new Response(
+        JSON.stringify({ error: "Please use a valid email address" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // Check for suspiciously short or long inputs
     if (name.trim().length < 2 || name.length > 100) {
       return new Response(
@@ -227,10 +294,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Initialize Supabase client with service role for inserting
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Log rate limit entry AFTER validation passes
+    await logRateLimitEntry(supabase, clientIP);
 
     // Save to database
     const { data: contactMessage, error: dbError } = await supabase
@@ -262,8 +327,9 @@ const handler = async (req: Request): Promise<Response> => {
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
 
-  } catch (error: any) {
-    console.error("Error in contact-form function:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error in contact-form function:", errorMessage);
     return new Response(
       JSON.stringify({ error: "An unexpected error occurred. Please try again." }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
