@@ -1,3 +1,4 @@
+import { SEOHead } from "@/components/SEOHead";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import {
@@ -119,7 +120,13 @@ const faqCategories = [
 
 const FAQ = () => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <>
+      <SEOHead
+        title="FAQ"
+        description="Find answers to common questions about RemindSwift invoice reminders, payments, pricing, and security."
+        path="/faq"
+      />
+      <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
         {/* Hero */}
@@ -186,7 +193,8 @@ const FAQ = () => {
         </section>
       </main>
       <Footer />
-    </div>
+      </div>
+    </>
   );
 };
 
