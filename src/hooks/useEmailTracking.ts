@@ -8,89 +8,11 @@ import type {
 } from "@/types/emailTracking";
 import { generateTrackingId } from "@/types/emailTracking";
 
-// Simulated initial reminder logs for demo
-const generateInitialLogs = (): ReminderLog[] => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
-  return [
-    {
-      id: "rl-001",
-      invoiceId: "INV-002",
-      clientId: "client-002",
-      userId: "user-001",
-      reminderType: "email",
-      reminderTone: "polite",
-      sentAt: new Date(today.getTime() - 2 * 60 * 60 * 1000), // 2 hours ago
-      deliveryStatus: "sent",
-      openedAt: new Date(today.getTime() - 1 * 60 * 60 * 1000), // 1 hour ago
-      openCount: 2,
-      createdAt: new Date(today.getTime() - 2 * 60 * 60 * 1000),
-      trackingId: "trk_demo_001",
-    },
-    {
-      id: "rl-002",
-      invoiceId: "INV-003",
-      clientId: "client-003",
-      userId: "user-001",
-      reminderType: "email",
-      reminderTone: "professional",
-      sentAt: new Date(today.getTime() - 24 * 60 * 60 * 1000), // Yesterday
-      deliveryStatus: "sent",
-      openedAt: null,
-      openCount: 0,
-      createdAt: new Date(today.getTime() - 24 * 60 * 60 * 1000),
-      trackingId: "trk_demo_002",
-    },
-    {
-      id: "rl-003",
-      invoiceId: "INV-003",
-      clientId: "client-003",
-      userId: "user-001",
-      reminderType: "email",
-      reminderTone: "firm",
-      sentAt: new Date(today.getTime() - 4 * 60 * 60 * 1000), // 4 hours ago
-      deliveryStatus: "sent",
-      openedAt: new Date(today.getTime() - 3 * 60 * 60 * 1000), // 3 hours ago
-      openCount: 1,
-      createdAt: new Date(today.getTime() - 4 * 60 * 60 * 1000),
-      trackingId: "trk_demo_003",
-    },
-    {
-      id: "rl-004",
-      invoiceId: "INV-004",
-      clientId: "client-004",
-      userId: "user-001",
-      reminderType: "email",
-      reminderTone: "polite",
-      sentAt: new Date(today.getTime() - 5 * 60 * 60 * 1000), // 5 hours ago
-      deliveryStatus: "failed",
-      openedAt: null,
-      openCount: 0,
-      createdAt: new Date(today.getTime() - 5 * 60 * 60 * 1000),
-      trackingId: "trk_demo_004",
-    },
-    {
-      id: "rl-005",
-      invoiceId: "INV-001",
-      clientId: "client-001",
-      userId: "user-001",
-      reminderType: "email",
-      reminderTone: "polite",
-      sentAt: new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-      deliveryStatus: "sent",
-      openedAt: new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000), // 30 min later
-      openCount: 3,
-      createdAt: new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000),
-      trackingId: "trk_demo_005",
-    },
-  ];
-};
-
 export function useEmailTracking() {
-  const [reminderLogs, setReminderLogs] = useState<ReminderLog[]>(generateInitialLogs);
+  // Start with empty logs - no demo data
+  const [reminderLogs, setReminderLogs] = useState<ReminderLog[]>([]);
 
-  // Calculate stats
+  // Calculate stats from real data only
   const stats = useMemo<EmailTrackingStats>(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -165,7 +87,7 @@ export function useEmailTracking() {
       .sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime());
   }, [reminderLogs]);
 
-  // Send a reminder (simulated)
+  // Send a reminder
   const sendReminder = useCallback((
     invoiceId: string,
     clientId: string,
@@ -195,9 +117,9 @@ export function useEmailTracking() {
 
     setReminderLogs((prev) => [newLog, ...prev]);
 
-    // Simulate email open after some time (for demo purposes)
+    // Simulate email open after some time
     if (isSuccess && type === "email") {
-      const openDelay = Math.random() * 10000 + 5000; // 5-15 seconds for demo
+      const openDelay = Math.random() * 10000 + 5000; // 5-15 seconds
       setTimeout(() => {
         setReminderLogs((prev) =>
           prev.map((log) =>

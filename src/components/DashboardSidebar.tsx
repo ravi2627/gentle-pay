@@ -1,5 +1,6 @@
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdmin } from "@/hooks/useAdmin";
 import { useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -25,6 +26,7 @@ import {
   HelpCircle,
   BellRing,
   BarChart3,
+  Shield,
 } from "lucide-react";
 
 const mainNavItems = [
@@ -43,6 +45,7 @@ const secondaryNavItems = [
 export function DashboardSidebar() {
   const { state } = useSidebar();
   const { user, profile, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const collapsed = state === "collapsed";
 
@@ -93,6 +96,31 @@ export function DashboardSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Admin Section - Only visible to admins */}
+        {isAdmin && (
+          <SidebarGroup className="mt-6">
+            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
+              Admin
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Admin Dashboard">
+                    <NavLink
+                      to="/admin"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                      activeClassName="bg-primary/10 text-primary font-medium"
+                    >
+                      <Shield className="h-[18px] w-[18px]" />
+                      <span className="text-sm">Admin Panel</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         <SidebarGroup className="mt-6">
           <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">

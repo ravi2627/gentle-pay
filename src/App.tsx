@@ -17,6 +17,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import Settings from "./pages/Settings";
 import Clients from "./pages/Clients";
 import NotFound from "./pages/NotFound";
@@ -51,6 +52,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/clients" element={<Clients />} />
               <Route path="/privacy" element={<Privacy />} />

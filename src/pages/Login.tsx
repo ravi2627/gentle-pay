@@ -9,18 +9,82 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [rateLimitMessage, setRateLimitMessage] = useState("");
   const { toast } = useToast();
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
+  const checkRateLimit = async (): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("login-rate-limit", {
+        body: { email, action: "check" },
+      });
+
+      if (error) {
+        console.error("Rate limit check error:", error);
+        return false; // Allow login attempt if rate limit check fails
+      }
+
+      if (data?.isLimited) {
+        setIsRateLimited(true);
+        setRateLimitMessage(
+          `Too many login attempts. Please wait ${data.windowMinutes} minutes before trying again.`
+        );
+        return true;
+      }
+
+      return false;
+    } catch (err) {
+      console.error("Rate limit exception:", err);
+      return false;
+    }
+  };
+
+  const recordLoginAttempt = async () => {
+    try {
+      await supabase.functions.invoke("login-rate-limit", {
+        body: { email, action: "record" },
+      });
+    } catch (err) {
+      console.error("Failed to record login attempt:", err);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isRateLimited) {
+      toast({
+        title: "Too many attempts",
+        description: rateLimitMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
+
+    // Check rate limit before attempting login
+    const limited = await checkRateLimit();
+    if (limited) {
+      setIsLoading(false);
+      toast({
+        title: "Too many attempts",
+        description: rateLimitMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Record the login attempt
+    await recordLoginAttempt();
 
     const { error } = await signIn(email, password);
     
@@ -59,6 +123,12 @@ const Login = () => {
               </p>
             </div>
 
+            {isRateLimited && (
+              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm text-destructive">{rateLimitMessage}</p>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -71,6 +141,7 @@ const Login = () => {
                   required
                   autoComplete="email"
                   className="h-11"
+                  disabled={isRateLimited}
                 />
               </div>
 
@@ -92,10 +163,15 @@ const Login = () => {
                   required
                   autoComplete="current-password"
                   className="h-11"
+                  disabled={isRateLimited}
                 />
               </div>
 
-              <Button type="submit" className="w-full h-11" disabled={isLoading}>
+              <Button 
+                type="submit" 
+                className="w-full h-11" 
+                disabled={isLoading || isRateLimited}
+              >
                 {isLoading ? "Logging in..." : "Log in"}
               </Button>
             </form>
