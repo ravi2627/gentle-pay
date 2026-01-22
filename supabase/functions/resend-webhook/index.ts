@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,20 +20,76 @@ interface ResendWebhookPayload {
   };
 }
 
+/**
+ * Verify webhook signature using Standard Webhooks library
+ * Returns the parsed payload if valid, throws error if invalid
+ */
+async function verifyWebhookSignature(req: Request): Promise<ResendWebhookPayload> {
+  const webhookSecret = Deno.env.get("RESEND_WEBHOOK_SECRET");
+  
+  if (!webhookSecret) {
+    console.error("RESEND_WEBHOOK_SECRET not configured");
+    throw new Error("Webhook secret not configured");
+  }
+
+  // Get the raw body as text for signature verification
+  const payload = await req.text();
+  
+  // Extract Svix headers for verification
+  const svixId = req.headers.get("svix-id");
+  const svixTimestamp = req.headers.get("svix-timestamp");
+  const svixSignature = req.headers.get("svix-signature");
+
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    console.error("Missing Svix headers for webhook verification");
+    throw new Error("Missing webhook signature headers");
+  }
+
+  try {
+    const wh = new Webhook(webhookSecret);
+    
+    // Verify the webhook signature
+    const verified = wh.verify(payload, {
+      "svix-id": svixId,
+      "svix-timestamp": svixTimestamp,
+      "svix-signature": svixSignature,
+    }) as ResendWebhookPayload;
+
+    return verified;
+  } catch (err) {
+    console.error("Webhook signature verification failed:", err);
+    throw new Error("Invalid webhook signature");
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Verify webhook signature before processing
+    let payload: ResendWebhookPayload;
+    try {
+      payload = await verifyWebhookSignature(req);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Verification failed";
+      console.error("Webhook verification error:", errorMessage);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     // Create Supabase client with service role for webhook processing
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const payload: ResendWebhookPayload = await req.json();
-    
-    console.log("Resend webhook received:", payload.type, payload.data.email_id);
+    console.log("Resend webhook received (verified):", payload.type, payload.data.email_id);
 
     // Extract tracking ID from email headers
     const trackingIdHeader = payload.data.headers?.find(
