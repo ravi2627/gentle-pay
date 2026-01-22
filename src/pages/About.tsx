@@ -1,4 +1,4 @@
-import { Helmet } from "react-helmet-async";
+import { SEOHead } from "@/components/SEOHead";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Zap, Mail, Users, Shield, Globe, Sparkles, CheckCircle, Clock, Lock, Server } from "lucide-react";
@@ -47,13 +47,11 @@ const About = () => {
 
   return (
     <>
-      <Helmet>
-        <title>About RemindSwift | Smart Reminder & Follow-Up Platform</title>
-        <meta 
-          name="description" 
-          content="RemindSwift helps individuals and businesses send automated reminders, invoice follow-ups, and notifications with reliable email delivery." 
-        />
-      </Helmet>
+      <SEOHead
+        title="About Us"
+        description="RemindSwift helps individuals and businesses send automated invoice reminders, follow-ups, and notifications with reliable email delivery."
+        path="/about"
+      />
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1">

@@ -1,3 +1,4 @@
+import { SEOHead } from "@/components/SEOHead";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FileText, Send, DollarSign, Bell, Clock, CheckCircle } from "lucide-react";
@@ -57,7 +58,13 @@ const steps = [
 
 const HowItWorks = () => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <>
+      <SEOHead
+        title="How It Works"
+        description="Learn how RemindSwift automates your invoice reminders in 4 simple steps. Add invoices, set schedules, and get paid faster."
+        path="/how-it-works"
+      />
+      <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
         {/* Hero */}
@@ -175,7 +182,8 @@ const HowItWorks = () => {
         </section>
       </main>
       <Footer />
-    </div>
+      </div>
+    </>
   );
 };
 

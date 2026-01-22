@@ -1,3 +1,4 @@
+import { SEOHead } from "@/components/SEOHead";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,13 @@ const features = [
 
 const Pricing = () => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <>
+      <SEOHead
+        title="Pricing"
+        description="Choose a plan that fits your needs. Free forever plan, Pro for automation, and Agency for teams. Start with a 14-day free trial."
+        path="/pricing"
+      />
+      <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
         {/* Hero */}
@@ -204,7 +211,8 @@ const Pricing = () => {
         </section>
       </main>
       <Footer />
-    </div>
+      </div>
+    </>
   );
 };
 

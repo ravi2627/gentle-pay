@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Helmet } from "react-helmet-async";
+import { SEOHead } from "@/components/SEOHead";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -101,9 +101,11 @@ const Contact = () => {
   if (isSubmitted) {
     return (
       <>
-        <Helmet>
-          <title>Message Sent – RemindSwift</title>
-        </Helmet>
+        <SEOHead
+          title="Message Sent"
+          description="Thank you for contacting RemindSwift. We'll get back to you within 24-48 hours."
+          path="/contact"
+        />
         <div className="min-h-screen flex flex-col bg-background">
           <Header />
           <main className="flex-1 container py-16 md:py-24">
@@ -131,13 +133,11 @@ const Contact = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Contact RemindSwift | Get in Touch</title>
-        <meta 
-          name="description" 
-          content="Contact RemindSwift for support, questions, or feedback. We respond within 24-48 hours. Email: support@remindswift.com" 
-        />
-      </Helmet>
+      <SEOHead
+        title="Contact Us"
+        description="Contact RemindSwift for support, questions, or feedback. We respond within 24-48 hours."
+        path="/contact"
+      />
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1 container py-16 md:py-24">
