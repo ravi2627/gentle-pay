@@ -384,14 +384,6 @@ const Clients = () => {
           </CardContent>
         </Card>
 
-        {/* Demo Notice */}
-        <div className="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-          <p className="text-sm text-center text-muted-foreground">
-            🎉 <strong>Demo Mode:</strong> Client data is not persisted. Connect
-            a backend to save your clients.
-          </p>
-        </div>
-
       {/* Add Client Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-md">

@@ -48,35 +48,8 @@ interface TeamMember {
   invitedAt: string;
 }
 
-const initialTeamMembers: TeamMember[] = [
-  {
-    id: "TM-001",
-    name: "Alex Johnson",
-    email: "alex@agency.com",
-    role: "admin",
-    status: "active",
-    lastActive: "2 hours ago",
-    invitedAt: "Dec 1, 2025",
-  },
-  {
-    id: "TM-002",
-    name: "Sarah Chen",
-    email: "sarah@agency.com",
-    role: "staff",
-    status: "active",
-    lastActive: "5 minutes ago",
-    invitedAt: "Dec 10, 2025",
-  },
-  {
-    id: "TM-003",
-    name: "",
-    email: "mike@agency.com",
-    role: "staff",
-    status: "pending",
-    lastActive: "",
-    invitedAt: "Jan 15, 2026",
-  },
-];
+// No demo data - start with empty team
+const initialTeamMembers: TeamMember[] = [];
 
 interface TeamManagementProps {
   plan: "free" | "pro" | "agency";
@@ -205,6 +178,21 @@ export const TeamManagement = ({ plan }: TeamManagementProps) => {
           </div>
         </CardHeader>
         <CardContent>
+          {teamMembers.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                <Users className="w-6 h-6 text-muted-foreground" />
+              </div>
+              <p className="font-medium mb-1">No team members yet</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Invite your first team member to get started
+              </p>
+              <Button size="sm" onClick={() => setIsInviteDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-1" />
+                Invite Team Member
+              </Button>
+            </div>
+          ) : (
           <div className="space-y-3">
             {teamMembers.map((member) => (
               <div
@@ -288,6 +276,7 @@ export const TeamManagement = ({ plan }: TeamManagementProps) => {
               </div>
             ))}
           </div>
+          )}
         </CardContent>
       </Card>
 

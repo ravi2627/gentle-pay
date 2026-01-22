@@ -765,13 +765,6 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* Demo Notice */}
-        <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-          <p className="text-sm text-center text-muted-foreground">
-            🎉 <strong>Demo Mode:</strong> Settings changes are not persisted.
-            Connect a backend to save your preferences.
-          </p>
-        </div>
       </div>
     </DashboardLayout>
   );
